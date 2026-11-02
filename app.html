@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>KIKCAFE アンケート管理</title>
 <style>
-  :root{ --ink:#22303c; --accent:#1d4e89; --bg:#f4f6f8; --card:#ffffff; --line:#d7dee5; }
+  :root{ --ink:#22303c; --accent:#1d4e89; --bg:#f4f6f8; --card:#ffffff; --line:#d7dee5; --sub:#5a6a76; --statusBg:#e8eff7; --track:#eef2f5; }
   *{ box-sizing:border-box; }
-  body{ margin:0; font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif; background:var(--bg); color:var(--ink); font-size:16px; line-height:1.7; }
+  body{ margin:0; font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif; background:var(--bg); color:var(--ink); font-size:1rem; line-height:1.7; }
   .wrap{ max-width:760px; margin:0 auto; padding:20px 16px 40px; }
   h1{ font-size:1.375rem; margin:8px 0 12px; }
   h2{ font-size:1.125rem; margin:24px 0 10px; }
@@ -15,33 +15,42 @@
   #refreshBtn{ padding:12px 22px; font-size:1rem; font-weight:bold; color:#fff; background:var(--accent); border:none; border-radius:8px; cursor:pointer; }
   #refreshBtn:disabled{ opacity:.5; }
   #csvBtn{ padding:12px 18px; font-size:1rem; background:#fff; border:1px solid var(--accent); color:var(--accent); border-radius:8px; cursor:pointer; }
-  #status{ background:#e8eff7; border-radius:8px; padding:10px 14px; margin-bottom:16px; min-height:1.7em; }
+  #status{ background:var(--statusBg); border-radius:8px; padding:10px 14px; margin-bottom:16px; min-height:1.7em; }
   .summary{ display:flex; gap:12px; flex-wrap:wrap; margin-bottom:8px; }
   .sum{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px 18px; }
   .sum .num{ font-size:1.5rem; font-weight:bold; }
-  .sum .lbl{ font-size:0.875rem; color:#5a6a76; }
+  .sum .lbl{ font-size:0.875rem; color:var(--sub); }
   .agg{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; }
   .agg .row{ display:flex; align-items:center; gap:10px; margin-bottom:6px; }
   .agg .name{ width:9em; flex:none; }
-  .agg .track{ flex:1; background:#eef2f5; border-radius:4px; height:18px; }
+  .agg .track{ flex:1; background:var(--track); border-radius:4px; height:18px; }
   .agg .fill{ background:var(--accent); height:18px; border-radius:4px; }
   .agg .cnt{ width:3em; text-align:right; font-weight:bold; }
   .item{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:12px; }
-  .item .date{ font-size:0.875rem; color:#5a6a76; }
+  .item .date{ font-size:0.875rem; color:var(--sub); }
   .item .head{ font-weight:bold; font-size:1.125rem; }
   .item dl{ margin:8px 0 0; }
-  .item dt{ font-size:0.875rem; color:#5a6a76; }
+  .item dt{ font-size:0.875rem; color:var(--sub); }
   .item dd{ margin:0 0 6px; }
   .coupon{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px 16px; margin-bottom:10px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
   .coupon .code{ font-weight:bold; font-size:1.125rem; letter-spacing:1px; }
-  .coupon .meta{ font-size:0.875rem; color:#5a6a76; }
+  .coupon .meta{ font-size:0.875rem; color:var(--sub); }
   .coupon .state{ font-weight:bold; }
-  .coupon .state.used{ color:#5a6a76; }
+  .coupon .state.used{ color:var(--sub); }
   .coupon button{ margin-left:auto; padding:10px 16px; font-size:1rem; border-radius:8px; cursor:pointer; border:1px solid var(--accent); background:var(--accent); color:#fff; }
   .coupon button.undo{ background:#fff; color:var(--accent); }
   .search{ width:100%; font-size:1rem; padding:10px; border:1px solid var(--line); border-radius:8px; margin-bottom:12px; }
-  .empty{ text-align:center; color:#5a6a76; padding:24px 0; }
-  .note{ font-size:0.875rem; color:#5a6a76; }
+  .empty{ text-align:center; color:var(--sub); padding:24px 0; }
+  .note{ font-size:0.875rem; color:var(--sub); }
+  .cal{ width:100%; border-collapse:collapse; }
+  .cal th{ font-size:0.875rem; color:var(--sub); padding:4px 0; }
+  .cal td{ border:1px solid var(--line); width:14.28%; height:52px; vertical-align:top; padding:4px; cursor:pointer; background:var(--card); }
+  .cal td.out{ opacity:.35; }
+  .cal td.sel{ outline:2px solid var(--accent); outline-offset:-2px; }
+  .cal td.today .dnum{ font-weight:bold; text-decoration:underline; }
+  .cal .dnum{ font-size:0.9375rem; display:block; }
+  .cal .cnt{ display:inline-block; background:var(--accent); color:#fff; border-radius:10px; font-size:0.75rem; padding:0 7px; margin-top:2px; }
+  .cal .cdot{ color:var(--accent); font-size:0.75rem; display:block; }
   #printArea{ display:none; }
   @media print{
     .wrap{ display:none !important; }
@@ -57,17 +66,38 @@
     #printArea .p-sum div span{ font-size:16pt; font-weight:bold; }
     @page{ size:A4; margin:15mm; }
   }
+  html[data-mode="dark"]{ --ink:#e8ecf2; --bg:#101216; --card:#1b1e24; --line:#3a4152; --sub:#9aa7ba; --statusBg:#1d2733; --track:#262d3d; }
+  html[data-mode="dark"] button[style*="background:#fff"]{ background:#262d3d !important; color:#e8ecf2 !important; }
+  .dispbar{ display:flex; gap:18px; flex-wrap:wrap; align-items:center; margin:0 0 14px; }
+  .dispbar .lbl2{ font-size:0.875rem; margin-right:2px; }
+  .dispbar button{ padding:6px 12px; font-size:0.9375rem; background:var(--card); border:1px solid var(--line); color:var(--ink); border-radius:6px; cursor:pointer; margin-right:4px; }
+  .dispbar button.on{ background:var(--accent); border-color:var(--accent); color:#fff; font-weight:bold; }
 </style>
+<script>
+try {
+  var _fsSteps = [16,17,18,20,22];
+  var _fs = parseInt(localStorage.getItem("kikcafe_fs") || "2", 10);
+  if (_fs >= 0 && _fs < 5) document.documentElement.style.fontSize = _fsSteps[_fs] + "px";
+  if (localStorage.getItem("kikcafe_theme") === "1") document.documentElement.dataset.mode = "dark";
+} catch(e) {}
+</script>
 </head>
 <body>
 <div class="wrap">
   <h1>KIKCAFE アンケート管理</h1>
+  <div class="dispbar"><span><span class="lbl2">文字</span><span id="fsizeBox"></span></span><span><span class="lbl2">色</span><span id="themeBox"></span></span></div>
   <div class="bar">
     <button id="refreshBtn" type="button">更新（新しい回答を取り込む）</button>
     <button id="csvBtn" type="button">CSVで書き出す</button>
     <button id="printBtn" type="button" style="padding:12px 18px;font-size:1rem;background:#fff;border:1px solid var(--accent);color:var(--accent);border-radius:8px;cursor:pointer;">集計レポートを印刷</button>
   </div>
   <div id="status">読み込み中です</div>
+  <!-- お試しモード（めぐさんの最終OK後に削除する） -->
+  <div class="bar" style="margin-top:6px;">
+    <button id="modeNormalBtn" type="button">通常モード</button>
+    <button id="modeDemoBtn" type="button">お試しモードで見る</button>
+  </div>
+  <div id="demoBanner" style="display:none;background:#fdf3e0;border:1px solid #e0b34e;color:#6b5510;border-radius:8px;padding:10px 12px;margin:8px 0;font-weight:600;">お試しモード中です。これはサンプルデータで、本番のデータには影響しません。</div>
   <div class="summary">
     <div class="sum"><div class="num" id="totalCount">0</div><div class="lbl">回答の総数</div></div>
     <div class="sum"><div class="num" id="avgAtmo">―</div><div class="lbl">雰囲気の平均（5点満点）</div></div>
@@ -80,6 +110,18 @@
   <div class="agg" id="aggCompanion"><p class="empty">まだ回答はありません</p></div>
   <h2>集計：年代</h2>
   <div class="agg" id="aggAge"><p class="empty">まだ回答はありません</p></div>
+
+  <h2>日付から見る</h2>
+  <div class="item">
+    <div class="bar" style="justify-content:space-between;">
+      <button id="calPrev" type="button" style="padding:10px 16px;font-size:1rem;background:#fff;border:1px solid var(--accent);color:var(--accent);border-radius:8px;cursor:pointer;">← 前の月</button>
+      <strong id="calLabel"></strong>
+      <button id="calNext" type="button" style="padding:10px 16px;font-size:1rem;background:#fff;border:1px solid var(--accent);color:var(--accent);border-radius:8px;cursor:pointer;">次の月 →</button>
+    </div>
+    <div id="calGrid"></div>
+    <div id="calDetail" style="margin-top:10px;"></div>
+    <p class="note">日付を押すと、その日の回答とチャージの記録が見られます。マスの中の数字は、その日の回答の件数です。</p>
+  </div>
 
   <h2>クーポンの設定</h2>
   <div class="item">
@@ -117,6 +159,17 @@
       <button id="creditTotalBtn" type="button" style="padding:10px 16px;font-size:1rem;background:#fff;border:1px solid var(--accent);color:var(--accent);border-radius:8px;cursor:pointer;">総額を設定する</button>
     </div>
     <p class="note">モニター料金の代わりに受けた、飲食で使える現物払い分の残高です。使ったときに、その場で引いて記録します。</p>
+  </div>
+
+  <h2>チャージ（お預かり残高）</h2>
+  <div class="item">
+    <div id="chargeAccounts"></div>
+    <div class="bar" style="margin-top:10px;">
+      <input type="text" id="chargeNewName" placeholder="お客様のお名前（例：佐藤様）" style="flex:1;min-width:10em;font-size:1rem;padding:10px;border:1px solid var(--line);border-radius:8px;">
+      <button id="chargeNewBtn" type="button" style="padding:10px 16px;font-size:1rem;background:#fff;border:1px solid var(--accent);color:var(--accent);border-radius:8px;cursor:pointer;">新しいお客様を登録</button>
+    </div>
+    <div id="chargeHistory" style="margin-top:10px;"></div>
+    <p class="note">お客様から預かったお金（入金）と、お会計で残高から払った分（利用）を記録します。残高と履歴は、その場でお客様にお見せできます。</p>
   </div>
 
   <h2>回答の一覧</h2>
@@ -180,12 +233,13 @@ async function fetchAll(){
     const data = await res.json();
     return { responses: Array.isArray(data) ? data : (data.responses || []),
              credit: Array.isArray(data) ? null : (data.credit || null),
-             config: Array.isArray(data) ? null : (data.config || null) };
+             config: Array.isArray(data) ? null : (data.config || null),
+             charge: Array.isArray(data) ? null : (data.charge || null) };
   }
   await new Promise(r => setTimeout(r, 400));
   let inbox = [];
   try { inbox = JSON.parse(localStorage.getItem(INBOX_KEY) || "[]"); } catch(e) {}
-  return { responses: inbox, credit: null, config: null };
+  return { responses: inbox, credit: null, config: null, charge: null };
 }
 
 async function postAction(obj){
@@ -232,6 +286,7 @@ function render(){
     btn.addEventListener("click", () => toggleCoupon(btn.getAttribute("data-code")));
   });
 
+  renderCalendar();
   const listNoteEl = document.getElementById("listFilterNote");
   if (!rows.length){ listEl.innerHTML = '<p class="empty">まだ回答はありません</p>'; listNoteEl.textContent = ""; return; }
   const lq = listQuery.trim().toLowerCase();
@@ -260,6 +315,7 @@ async function toggleCoupon(code){
   if (!row) return;
   row.coupon.used = !row.coupon.used;
   saveStore(store);
+  if (demoMode) { render(); return; }
   if (!GAS_URL) {
     try {
       const inbox = JSON.parse(localStorage.getItem(INBOX_KEY) || "[]");
@@ -281,12 +337,20 @@ async function refresh(){
   const btn = document.getElementById("refreshBtn");
   btn.disabled = true;
   statusEl.textContent = "新しい回答を確認しています";
+  if (demoMode) {
+    statusEl.textContent = "お試しモード中です（サンプルデータ）";
+    render();
+    btn.disabled = false;
+    return;
+  }
   try {
     const all = await fetchAll();
     const inbox = (all.responses || []).filter(r => r && r.id);
     if (GAS_URL && all.credit) { serverCredit = all.credit; renderCredit(); }
     if (GAS_URL && all.config) { serverConfig = all.config; }
+    if (GAS_URL && all.charge) { serverCharge = all.charge; }
     renderConfig();
+    renderCharge();
     /* 完全連動：アプリの一覧はシートの鏡にする（シートで消せば消え、直せば直る）。
        置き換える前に、直前の控えを1世代だけ保険として残す */
     const before = loadStore();
@@ -308,6 +372,7 @@ async function refresh(){
 document.getElementById("refreshBtn").addEventListener("click", refresh);
 document.getElementById("resetStoreBtn").addEventListener("click", async () => {
   if (!confirm("アプリに取り込み済みの控えを消して、シートから取り直します。シートのデータは消えません。よろしいですか。")) return;
+  if (demoMode) { setDemoMode(true); return; }
   localStorage.removeItem(STORE_KEY);
   render();
   await refresh();
@@ -348,7 +413,7 @@ function saveCredit(c){ localStorage.setItem(CREDIT_KEY, JSON.stringify(c)); }
 function yen(n){ return "¥" + Number(n).toLocaleString("ja-JP"); }
 
 function renderCredit(){
-  const c = (GAS_URL && serverCredit) ? serverCredit : loadCredit();
+  const c = demoMode ? (demoCredit || sampleCredit()) : ((GAS_URL && serverCredit) ? serverCredit : loadCredit());
   const used = c.uses.reduce((a,u) => a + (u.amount || 0), 0);
   document.getElementById("creditBalance").textContent = yen(c.total - used);
   document.getElementById("creditTotal").textContent = yen(c.total);
@@ -367,6 +432,12 @@ function renderCredit(){
   hist.innerHTML = rows.reverse().join("");
   hist.querySelectorAll("button").forEach(btn => {
     btn.addEventListener("click", async () => {
+      if (demoMode) {
+        demoCredit.uses.splice(Number(btn.getAttribute("data-idx")), 1);
+        statusEl.textContent = "利用の記録を1件取り消しました（お試しモード中は保存されません）";
+        renderCredit();
+        return;
+      }
       if (GAS_URL) {
         const json = await postAction({ action: "creditUndo", useId: btn.getAttribute("data-uid") });
         if (json && json.credit) serverCredit = json.credit;
@@ -389,7 +460,9 @@ document.getElementById("useBtn").addEventListener("click", async () => {
   if (!amount || amount <= 0){ statusEl.textContent = "使った金額を入れてください"; return; }
   const useId = "u" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   const ts = new Date().toISOString();
-  if (GAS_URL) {
+  if (demoMode) {
+    demoCredit.uses.push({ id: useId, ts: ts, amount: amount, memo: memo });
+  } else if (GAS_URL) {
     const json = await postAction({ action: "creditUse", useId: useId, ts: ts, amount: amount, memo: memo });
     if (json && json.credit) serverCredit = json.credit;
   } else {
@@ -405,7 +478,9 @@ document.getElementById("useBtn").addEventListener("click", async () => {
 document.getElementById("creditTotalBtn").addEventListener("click", async () => {
   const v = Number(document.getElementById("creditTotalInput").value);
   if (isNaN(v) || v < 0){ statusEl.textContent = "総額を確認してください"; return; }
-  if (GAS_URL) {
+  if (demoMode) {
+    demoCredit.total = v;
+  } else if (GAS_URL) {
     const json = await postAction({ action: "creditTotal", total: v });
     if (json && json.credit) serverCredit = json.credit;
   } else {
@@ -421,7 +496,9 @@ document.getElementById("couponConfigBtn").addEventListener("click", async () =>
   const days = Math.round(Number(document.getElementById("couponDaysInput").value));
   if (!title){ statusEl.textContent = "クーポンの内容を入力してください"; return; }
   if (!(days >= 1 && days <= 730)){ statusEl.textContent = "有効期限は1日から730日の間で設定してください"; return; }
-  if (GAS_URL) {
+  if (demoMode) {
+    serverConfig = { couponTitle: title, couponDays: days };
+  } else if (GAS_URL) {
     const json = await postAction({ action: "configCoupon", title: title, days: days });
     if (json && json.config) serverConfig = json.config;
   } else {
@@ -430,6 +507,276 @@ document.getElementById("couponConfigBtn").addEventListener("click", async () =>
   statusEl.textContent = "クーポンの設定を保存しました（内容：" + title + "／期限：発行から" + days + "日）。次に発行されるクーポンから使われます";
   renderConfig();
 });
+
+/* ==== お試しモード（めぐさんの最終OK後に削除する） ====
+   サンプルデータで「こういう風に見れますよ」を見せるためのモードです。
+   本番のデータには一切触りません。 */
+let demoMode = false;
+let demoCredit = null;
+let demoCharge = null;
+
+const SAMPLE_ROWS = [
+  { id:"sample1", ts:"2026-10-20T03:00:00.000Z", age:"60代以上", gender:"女性", companion:"1人", source:"通りがかり", sourceNote:"", atmosphere:"とても満足", comment:"静かで落ち着きます", coupon:{ code:"KF-D3K8Q2", title:"次回ドリンク 200円引き", expires:"2026/11/19", used:true } },
+  { id:"sample2", ts:"2026-10-21T03:00:00.000Z", age:"40代", gender:"男性", companion:"仕事仲間", source:"紹介", sourceNote:"田中さんの紹介", atmosphere:"やや満足", comment:"Wi-Fiがあると助かります", coupon:{ code:"KF-M7P2X9", title:"次回ドリンク 200円引き", expires:"2026/10/31", used:false } },
+  { id:"sample3", ts:"2026-10-23T03:00:00.000Z", age:"30代", gender:"女性", companion:"友人", source:"ChatGPT", sourceNote:"", atmosphere:"とても満足", comment:"ChatGPTにおすすめされて来ました", coupon:{ code:"KF-Q4N6B8", title:"次回ドリンク 200円引き", expires:"2026/11/22", used:false } },
+  { id:"sample4", ts:"2026-10-24T03:00:00.000Z", age:"20代", gender:"女性", companion:"1人", source:"SNS", sourceNote:"", atmosphere:"とても満足", comment:"写真で見たケーキが気になって来ました", coupon:{ code:"KF-T9W3E5", title:"次回ドリンク 200円引き", expires:"2026/11/23", used:true } },
+  { id:"sample5", ts:"2026-10-25T03:00:00.000Z", age:"50代", gender:"男性", companion:"家族", source:"ホームページ", sourceNote:"", atmosphere:"普通", comment:"駐車場の場所が少し分かりにくかったです", coupon:{ code:"KF-H2J7K4", title:"次回ドリンク 200円引き", expires:"2026/11/24", used:false } },
+  { id:"sample6", ts:"2026-10-27T03:00:00.000Z", age:"40代", gender:"女性", companion:"友人", source:"紹介", sourceNote:"常連の佐藤さんの紹介", atmosphere:"とても満足", comment:"占いのある日に来てみたいです", coupon:{ code:"KF-S8D5F6", title:"次回ドリンク 200円引き", expires:"2026/11/26", used:false } },
+  { id:"sample7", ts:"2026-10-28T03:00:00.000Z", age:"30代", gender:"男性", companion:"1人", source:"グルメ情報サイト", sourceNote:"", atmosphere:"やや満足", comment:"ランチの種類が増えると嬉しいです", coupon:{ code:"KF-G6H9J2", title:"次回ドリンク 200円引き", expires:"2026/11/27", used:false } },
+  { id:"sample8", ts:"2026-10-29T03:00:00.000Z", age:"60代以上", gender:"女性", companion:"友人", source:"ブログ", sourceNote:"", atmosphere:"とても満足", comment:"手作りの雰囲気が好きです", coupon:{ code:"KF-K3L7M9", title:"次回ドリンク 200円引き", expires:"2026/11/28", used:true } },
+  { id:"sample9", ts:"2026-10-30T03:00:00.000Z", age:"20代", gender:"男性", companion:"1人", source:"グーグル", sourceNote:"", atmosphere:"やや不満", comment:"入口が少し分かりにくかったです", coupon:{ code:"KF-N5P8Q3", title:"次回ドリンク 200円引き", expires:"2026/11/29", used:false } },
+  { id:"sample10", ts:"2026-10-31T03:00:00.000Z", age:"50代", gender:"女性", companion:"家族", source:"通りがかり", sourceNote:"", atmosphere:"やや満足", comment:"季節のスイーツを楽しみにしています", coupon:{ code:"KF-W2E4R6", title:"次回ドリンク 200円引き", expires:"2026/11/30", used:false } },
+  { id:"sample11", ts:"2026-11-01T03:00:00.000Z", age:"30代", gender:"女性", companion:"仕事仲間", source:"紹介", sourceNote:"職場の同僚の紹介", atmosphere:"とても満足", comment:"マッサージの帰りに寄りました", coupon:{ code:"KF-Y7U9I2", title:"次回ドリンク 200円引き", expires:"2026/12/01", used:false } },
+  { id:"sample12", ts:"2026-11-02T03:00:00.000Z", age:"40代", gender:"女性", companion:"1人", source:"ホームページ", sourceNote:"", atmosphere:"とても満足", comment:"新メニューの案内をSNSで見たいです", coupon:{ code:"KF-O4P6A8", title:"次回ドリンク 200円引き", expires:"2026/12/02", used:false } }
+];
+
+function sampleCredit(){
+  return { total: 15000, uses: [
+    { id: "du1", ts: "2026-10-30T03:00:00.000Z", amount: 800, memo: "コーヒーとケーキ" },
+    { id: "du2", ts: "2026-11-01T03:00:00.000Z", amount: 1200, memo: "ランチとコーヒー" }
+  ]};
+}
+function sampleCharge(){
+  return { entries: [
+    { entryId: "sc1", accountId: "sa1", name: "佐藤様", kind: "open", amount: 0, ts: "2026-10-28T02:00:00.000Z", memo: "" },
+    { entryId: "sc2", accountId: "sa1", name: "佐藤様", kind: "in", amount: 5000, ts: "2026-10-28T02:01:00.000Z", memo: "" },
+    { entryId: "sc3", accountId: "sa2", name: "鈴木様", kind: "open", amount: 0, ts: "2026-10-30T02:00:00.000Z", memo: "" },
+    { entryId: "sc4", accountId: "sa2", name: "鈴木様", kind: "in", amount: 10000, ts: "2026-10-30T02:01:00.000Z", memo: "" },
+    { entryId: "sc5", accountId: "sa1", name: "佐藤様", kind: "out", amount: 1200, ts: "2026-11-01T03:00:00.000Z", memo: "ランチとコーヒー" }
+  ]};
+}
+function setDemoMode(on){
+  demoMode = on;
+  document.getElementById("demoBanner").style.display = on ? "block" : "none";
+  const nb = document.getElementById("modeNormalBtn"), db = document.getElementById("modeDemoBtn");
+  nb.style.background = on ? "#fff" : "var(--accent)"; nb.style.color = on ? "var(--accent)" : "#fff";
+  db.style.background = on ? "var(--accent)" : "#fff"; db.style.color = on ? "#fff" : "var(--accent)";
+  if (on) {
+    demoCredit = sampleCredit();
+    demoCharge = sampleCharge();
+    serverConfig = { couponTitle: "次回ドリンク 200円引き", couponDays: 30 };
+    saveStore(JSON.parse(JSON.stringify(SAMPLE_ROWS)));
+    statusEl.textContent = "お試しモード中です（サンプルデータ " + SAMPLE_ROWS.length + " 件）";
+    renderCredit();
+    renderConfig();
+    renderCharge();
+    render();
+  } else {
+    demoCredit = null;
+    demoCharge = null;
+    refresh();
+  }
+}
+document.getElementById("modeNormalBtn").addEventListener("click", () => setDemoMode(false));
+document.getElementById("modeDemoBtn").addEventListener("click", () => setDemoMode(true));
+document.getElementById("modeDemoBtn").style.background = "#fff";
+document.getElementById("modeDemoBtn").style.color = "var(--accent)";
+
+/* ===== チャージ（お預かり残高） =====
+   お客様ごとに、預かったお金（入金）とお会計での利用を記録します。
+   本番ではシート側が正本です。 */
+let serverCharge = null;
+const CHARGE_KEY = "survey_proto_charge_v1";
+
+function loadChargeLocal(){
+  try {
+    const c = JSON.parse(localStorage.getItem(CHARGE_KEY) || "null");
+    if (c && Array.isArray(c.entries)) return c;
+  } catch(e) {}
+  return { entries: [] };
+}
+function saveChargeLocal(c){ localStorage.setItem(CHARGE_KEY, JSON.stringify(c)); }
+function chargeData(){ return demoMode ? (demoCharge || sampleCharge()) : (GAS_URL ? (serverCharge || { entries: [] }) : loadChargeLocal()); }
+
+function chargeAccounts(){
+  const map = new Map();
+  chargeData().entries.forEach(e => {
+    if (!e.accountId) return;
+    if (!map.has(e.accountId)) map.set(e.accountId, { id: e.accountId, name: e.name || "", balance: 0 });
+    const a = map.get(e.accountId);
+    if (e.name) a.name = e.name;
+    if (e.kind === "in") a.balance += e.amount || 0;
+    if (e.kind === "out") a.balance -= e.amount || 0;
+  });
+  return [...map.values()];
+}
+
+function renderCharge(){
+  const wrap = document.getElementById("chargeAccounts");
+  const accounts = chargeAccounts();
+  const btnIn = 'style="padding:10px 16px;font-size:1rem;font-weight:bold;color:#fff;background:var(--accent);border:none;border-radius:8px;cursor:pointer;"';
+  const btnOut = 'style="padding:10px 16px;font-size:1rem;background:#fff;border:1px solid var(--accent);color:var(--accent);border-radius:8px;cursor:pointer;"';
+  const inp = 'style="font-size:1rem;padding:10px;border:1px solid var(--line);border-radius:8px;"';
+  wrap.innerHTML = accounts.length ? accounts.map(a =>
+    '<div class="coupon"><div><div class="code">' + esc(a.name) + '</div>' +
+    '<div class="meta">残高 ' + yen(a.balance) + '</div></div></div>' +
+    '<div class="bar" style="margin:4px 0 14px;">' +
+    '<input type="number" min="1" step="1" placeholder="金額（円）" id="amt-' + a.id + '" ' + inp + ' style="width:9em;">' +
+    '<input type="text" placeholder="メモ（任意）" id="memo-' + a.id + '" ' + inp + ' style="flex:1;min-width:8em;">' +
+    '<button type="button" data-act="in" data-acc="' + a.id + '" ' + btnIn + '>入金</button>' +
+    '<button type="button" data-act="out" data-acc="' + a.id + '" ' + btnOut + '>利用（お会計）</button></div>'
+  ).join("") : '<p class="empty">まだ登録がありません。下の欄から、お客様を登録してください</p>';
+  wrap.querySelectorAll("button[data-act]").forEach(btn => {
+    btn.addEventListener("click", () => chargeMove(btn.getAttribute("data-act"), btn.getAttribute("data-acc")));
+  });
+  const hist = document.getElementById("chargeHistory");
+  const entries = chargeData().entries;
+  if (!entries.length){ hist.innerHTML = ""; return; }
+  const bal = {};
+  const rows = entries.map(e => {
+    bal[e.accountId] = (bal[e.accountId] || 0) + (e.kind === "in" ? (e.amount || 0) : e.kind === "out" ? -(e.amount || 0) : 0);
+    return { e: e, balAfter: bal[e.accountId] };
+  });
+  const label = { open: "登録", in: "入金", out: "利用" };
+  hist.innerHTML = '<h3 style="font-size:1rem;margin:10px 0 6px;">チャージの履歴</h3>' + rows.slice().reverse().map(x =>
+    '<div class="coupon"><div><div class="code">' + esc(x.e.name) + '　' + (label[x.e.kind] || x.e.kind) + (x.e.amount ? '　' + yen(x.e.amount) : '') + '</div>' +
+    '<div class="meta">' + fmtDate(x.e.ts) + (x.e.memo ? '／' + esc(x.e.memo) : '') + '／残高 ' + yen(x.balAfter) + '</div></div>' +
+    '<button type="button" data-undo="' + esc(x.e.entryId) + '" class="undo">取り消す</button></div>').join("");
+  hist.querySelectorAll("button[data-undo]").forEach(btn => {
+    btn.addEventListener("click", () => chargeUndo(btn.getAttribute("data-undo")));
+  });
+  if (typeof renderCalendar === "function") renderCalendar();
+}
+
+async function chargeApply(rec){
+  if (demoMode) {
+    demoCharge.entries.push(rec);
+    return;
+  }
+  if (GAS_URL) {
+    const json = await postAction(Object.assign({ action: "chargeEntry" }, rec));
+    if (json && json.charge) serverCharge = json.charge;
+  } else {
+    const c = loadChargeLocal();
+    c.entries.push(rec);
+    saveChargeLocal(c);
+  }
+}
+
+async function chargeMove(kind, accountId){
+  const amountEl = document.getElementById("amt-" + accountId);
+  const memoEl = document.getElementById("memo-" + accountId);
+  const amount = Number(amountEl.value);
+  if (!amount || amount <= 0){ statusEl.textContent = "金額を入れてください"; return; }
+  const acc = chargeAccounts().find(a => a.id === accountId);
+  const rec = {
+    entryId: "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+    accountId: accountId,
+    name: acc ? acc.name : "",
+    kind: kind,
+    amount: amount,
+    ts: new Date().toISOString(),
+    memo: memoEl.value.trim()
+  };
+  await chargeApply(rec);
+  statusEl.textContent = (kind === "in" ? "入金" : "利用") + "を記録しました：" + yen(amount) + "（" + rec.name + "）";
+  renderCharge();
+}
+
+async function chargeUndo(entryId){
+  if (demoMode) {
+    demoCharge.entries = demoCharge.entries.filter(e => e.entryId !== entryId);
+    statusEl.textContent = "チャージの記録を1件取り消しました（お試しモード中は保存されません）";
+    renderCharge();
+    return;
+  }
+  if (GAS_URL) {
+    const json = await postAction({ action: "chargeUndo", entryId: entryId });
+    if (json && json.charge) serverCharge = json.charge;
+  } else {
+    const c = loadChargeLocal();
+    c.entries = c.entries.filter(e => e.entryId !== entryId);
+    saveChargeLocal(c);
+  }
+  statusEl.textContent = "チャージの記録を1件取り消しました";
+  renderCharge();
+}
+
+document.getElementById("chargeNewBtn").addEventListener("click", async () => {
+  const nameEl = document.getElementById("chargeNewName");
+  const name = nameEl.value.trim();
+  if (!name){ statusEl.textContent = "お客様のお名前を入れてください"; return; }
+  const rec = {
+    entryId: "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+    accountId: "a" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+    name: name,
+    kind: "open",
+    amount: 0,
+    ts: new Date().toISOString(),
+    memo: ""
+  };
+  await chargeApply(rec);
+  nameEl.value = "";
+  statusEl.textContent = name + " を登録しました";
+  renderCharge();
+});
+
+/* ===== 日付から見る（カレンダー） ===== */
+let calCursor = null;
+let calSelected = null;
+function dateKey(ts){
+  const d = new Date(ts);
+  if (isNaN(d)) return "";
+  const p = n => String(n).padStart(2, "0");
+  return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
+}
+function renderCalendar(){
+  const grid = document.getElementById("calGrid");
+  if (!grid) return;
+  const label = document.getElementById("calLabel");
+  const detail = document.getElementById("calDetail");
+  const now = new Date();
+  if (!calCursor) calCursor = { y: now.getFullYear(), m: now.getMonth() };
+  if (!calSelected) calSelected = dateKey(now.toISOString());
+  const byDay = {};
+  loadStore().forEach(r => { const k = dateKey(r.ts); if (k) (byDay[k] = byDay[k] || { resp: [], charge: [] }).resp.push(r); });
+  chargeData().entries.forEach(e => { const k = dateKey(e.ts); if (k) (byDay[k] = byDay[k] || { resp: [], charge: [] }).charge.push(e); });
+  label.textContent = calCursor.y + "年" + (calCursor.m + 1) + "月";
+  const startDay = new Date(calCursor.y, calCursor.m, 1).getDay();
+  const daysInMonth = new Date(calCursor.y, calCursor.m + 1, 0).getDate();
+  const daysPrev = new Date(calCursor.y, calCursor.m, 0).getDate();
+  const todayKey = dateKey(now.toISOString());
+  let cells = "";
+  const totalCells = Math.ceil((startDay + daysInMonth) / 7) * 7;
+  for (let i = 0; i < totalCells; i++) {
+    let dnum, key, out = false, base;
+    if (i < startDay) { dnum = daysPrev - startDay + 1 + i; out = true; base = new Date(calCursor.y, calCursor.m - 1, dnum); }
+    else if (i >= startDay + daysInMonth) { dnum = i - startDay - daysInMonth + 1; out = true; base = new Date(calCursor.y, calCursor.m + 1, dnum); }
+    else { dnum = i - startDay + 1; base = new Date(calCursor.y, calCursor.m, dnum); }
+    key = dateKey(base.toISOString());
+    const info = byDay[key];
+    cells += '<td class="' + (out ? "out" : "") + (key === calSelected ? " sel" : "") + (key === todayKey ? " today" : "") + '" data-day="' + key + '">' +
+      '<span class="dnum">' + dnum + '</span>' +
+      (info && info.resp.length ? '<span class="cnt">' + info.resp.length + '件</span>' : '') +
+      (info && info.charge.length ? '<span class="cdot">チャージあり</span>' : '') + '</td>';
+    if (i % 7 === 6 && i < totalCells - 1) cells += "</tr><tr>";
+  }
+  grid.innerHTML = '<table class="cal"><tr><th>日</th><th>月</th><th>火</th><th>水</th><th>木</th><th>金</th><th>土</th></tr><tr>' + cells + "</tr></table>";
+  grid.querySelectorAll("td[data-day]").forEach(td => td.addEventListener("click", () => { calSelected = td.getAttribute("data-day"); renderCalendar(); }));
+  const sel = byDay[calSelected] || { resp: [], charge: [] };
+  const parts = calSelected.split("-");
+  let html = '<h3 style="font-size:1rem;margin:6px 0;">' + Number(parts[1]) + "月" + Number(parts[2]) + "日の記録</h3>";
+  if (!sel.resp.length && !sel.charge.length) html += '<p class="empty">この日の記録はありません</p>';
+  sel.resp.forEach(r => {
+    const who = [r.age, r.gender].filter(Boolean).join("・");
+    const source = (r.source || "") + (r.sourceNote ? "（" + r.sourceNote + "）" : "");
+    html += '<div class="item"><div class="date">' + fmtDate(r.ts) + '</div><div class="head">' + esc(source || "きっかけ未回答") + '</div><dl>' +
+      (who ? '<dt>性別・年齢</dt><dd>' + esc(who) + '</dd>' : '') +
+      (r.companion ? '<dt>誰と一緒に</dt><dd>' + esc(r.companion) + '</dd>' : '') +
+      (r.atmosphere ? '<dt>お店の雰囲気</dt><dd>' + esc(r.atmosphere) + '</dd>' : '') +
+      (r.comment ? '<dt>改善点・感想・興味のあること</dt><dd>' + esc(r.comment) + '</dd>' : '') +
+      (r.coupon ? '<dt>発行クーポン</dt><dd>' + esc(r.coupon.code) + '（' + (r.coupon.used ? "使用済み" : "未使用") + '）</dd>' : '') +
+      '</dl></div>';
+  });
+  const kindLabel = { open: "登録", in: "入金", out: "利用" };
+  sel.charge.forEach(e => {
+    html += '<div class="coupon"><div><div class="code">' + esc(e.name) + '　チャージ' + (kindLabel[e.kind] || e.kind) + (e.amount ? '　' + yen(e.amount) : '') + '</div>' +
+      '<div class="meta">' + fmtDate(e.ts) + (e.memo ? '／' + esc(e.memo) : '') + '</div></div></div>';
+  });
+  detail.innerHTML = html;
+}
+document.getElementById("calPrev").addEventListener("click", () => { if (!calCursor) calCursor = { y: new Date().getFullYear(), m: new Date().getMonth() }; calCursor.m--; if (calCursor.m < 0) { calCursor.m = 11; calCursor.y--; } renderCalendar(); });
+document.getElementById("calNext").addEventListener("click", () => { if (!calCursor) calCursor = { y: new Date().getFullYear(), m: new Date().getMonth() }; calCursor.m++; if (calCursor.m > 11) { calCursor.m = 0; calCursor.y++; } renderCalendar(); });
 
 /* ===== 印刷（集計レポート） ===== */
 function aggTable(rows, key, total){
@@ -484,6 +831,42 @@ window.addEventListener("beforeprint", buildPrint);
 renderCredit();
 render();
 refresh(); /* 開いたときに自動で取り込む */
+
+/* ===== 表示の設定（文字の大きさ5段階・画面の色 白/黒） ===== */
+const FS_STEPS = [16,17,18,20,22];
+const FS_NAMES = ["小","やや小","標準","大","特大"];
+let fsIdx = parseInt(localStorage.getItem("kikcafe_fs") ?? "2", 10);
+if (!(fsIdx >= 0 && fsIdx < 5)) fsIdx = 2;
+function applyFs(){
+  document.documentElement.style.fontSize = FS_STEPS[fsIdx] + "px";
+  document.querySelectorAll("#fsizeBox button").forEach((b,i) => b.classList.toggle("on", i === fsIdx));
+}
+(function(){
+  const box = document.getElementById("fsizeBox");
+  FS_NAMES.forEach((n,i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = n;
+    b.addEventListener("click", () => { fsIdx = i; localStorage.setItem("kikcafe_fs", String(i)); applyFs(); });
+    box.appendChild(b);
+  });
+  applyFs();
+})();
+let themeIdx = parseInt(localStorage.getItem("kikcafe_theme") ?? "0", 10);
+if (!(themeIdx === 0 || themeIdx === 1)) themeIdx = 0;
+function applyTheme(){
+  document.documentElement.dataset.mode = themeIdx === 1 ? "dark" : "light";
+  document.querySelectorAll("#themeBox button").forEach((b,i) => b.classList.toggle("on", i === themeIdx));
+}
+(function(){
+  const tb = document.getElementById("themeBox");
+  ["白","黒"].forEach((n,i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = n;
+    b.addEventListener("click", () => { themeIdx = i; localStorage.setItem("kikcafe_theme", String(i)); applyTheme(); });
+    tb.appendChild(b);
+  });
+  applyTheme();
+})();
 </script>
 <div id="printArea"></div>
 </body>

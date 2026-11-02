@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>KIKCAFE お客様アンケート</title>
 <style>
-  :root{ --ink:#22303c; --accent:#1d4e89; --bg:#f4f6f8; --card:#ffffff; --line:#d7dee5; }
+  :root{ --ink:#22303c; --accent:#1d4e89; --bg:#f4f6f8; --card:#ffffff; --line:#d7dee5; --sub:#5a6a76; }
   *{ box-sizing:border-box; }
-  body{ margin:0; font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif; background:var(--bg); color:var(--ink); font-size:16px; line-height:1.7; }
+  body{ margin:0; font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif; background:var(--bg); color:var(--ink); font-size:1rem; line-height:1.7; }
   .wrap{ max-width:640px; margin:0 auto; padding:20px 16px 40px; }
   h1{ font-size:1.5rem; margin:8px 0 4px; }
   .lead{ margin:0 0 20px; }
@@ -18,30 +18,44 @@
   .req{ color:#b3261e; font-size:0.875rem; margin-left:6px; }
   label.opt{ display:block; padding:10px 12px; border:1px solid var(--line); border-radius:8px; margin-bottom:8px; cursor:pointer; }
   label.opt input{ margin-right:8px; transform:scale(1.2); }
-  input[type="text"], textarea{ width:100%; font-size:1rem; padding:10px; border:1px solid var(--line); border-radius:8px; background:#fff; }
+  input[type="text"], textarea{ width:100%; font-size:1rem; padding:10px; border:1px solid var(--line); border-radius:8px; background:var(--card); }
   textarea{ min-height:110px; }
   .submit{ display:block; width:100%; padding:16px; font-size:1.125rem; font-weight:bold; color:#fff; background:var(--accent); border:none; border-radius:10px; cursor:pointer; }
   .submit:disabled{ opacity:.5; }
-  .note{ font-size:0.875rem; color:#5a6a76; }
+  .note{ font-size:0.875rem; color:var(--sub); }
   #done{ display:none; padding:24px 0; }
   #done .big{ font-size:1.375rem; font-weight:bold; text-align:center; margin-bottom:8px; }
   #done .thanks{ text-align:center; margin-bottom:20px; }
   .coupon{ background:#fff8e6; border:2px dashed #c9a227; border-radius:12px; padding:20px; text-align:center; }
   .coupon .c-title{ font-weight:bold; font-size:1.25rem; margin-bottom:4px; }
   .coupon .c-code{ font-size:1.75rem; font-weight:bold; letter-spacing:2px; margin:10px 0; }
-  .coupon .c-exp{ font-size:0.875rem; color:#5a6a76; }
+  .coupon .c-exp{ font-size:0.875rem; color:var(--sub); }
   .save-btn{ display:block; width:100%; padding:16px; margin-top:16px; font-size:1.125rem; font-weight:bold; color:#fff; background:var(--accent); border:none; border-radius:10px; cursor:pointer; }
   .show-note{ text-align:center; margin-top:14px; }
   .save-msg{ text-align:center; margin-top:10px; color:#2e7d32; font-weight:bold; }
   #couponImg{ display:none; width:100%; margin-top:14px; border-radius:12px; }
   #err{ display:none; color:#b3261e; margin-top:10px; }
+  html[data-mode="dark"]{ --ink:#e8ecf2; --bg:#101216; --card:#1b1e24; --line:#3a4152; --sub:#9aa7ba; }
+  .dispbar{ display:flex; gap:18px; flex-wrap:wrap; align-items:center; margin:0 0 14px; }
+  .dispbar .lbl2{ font-size:0.875rem; margin-right:2px; }
+  .dispbar button{ padding:6px 12px; font-size:0.9375rem; background:var(--card); border:1px solid var(--line); color:var(--ink); border-radius:6px; cursor:pointer; margin-right:4px; }
+  .dispbar button.on{ background:var(--accent); border-color:var(--accent); color:#fff; font-weight:bold; }
 </style>
+<script>
+try {
+  var _fsSteps = [16,17,18,20,22];
+  var _fs = parseInt(localStorage.getItem("kikcafe_fs") || "2", 10);
+  if (_fs >= 0 && _fs < 5) document.documentElement.style.fontSize = _fsSteps[_fs] + "px";
+  if (localStorage.getItem("kikcafe_theme") === "1") document.documentElement.dataset.mode = "dark";
+} catch(e) {}
+</script>
 </head>
 <body>
 <div class="wrap">
   <div id="formArea">
     <h1>アンケートにご協力お願いします</h1>
     <p class="lead">KIKCAFEにご来店ありがとうございます。当てはまる項目をお選びください。ご回答いただいた方には、次回使えるクーポンをお渡ししています。</p>
+  <div class="dispbar"><span><span class="lbl2">文字</span><span id="fsizeBox"></span></span><span><span class="lbl2">色</span><span id="themeBox"></span></span></div>
     <form id="survey">
       <div class="card">
         <h2>Q1. 性別・ご年齢</h2>
@@ -247,6 +261,42 @@ document.getElementById("saveCouponBtn").addEventListener("click", async () => {
     msg.textContent = "下の画像を長押ししても保存できます";
   }
 });
+
+/* ===== 表示の設定（文字の大きさ5段階・画面の色 白/黒） ===== */
+const FS_STEPS = [16,17,18,20,22];
+const FS_NAMES = ["小","やや小","標準","大","特大"];
+let fsIdx = parseInt(localStorage.getItem("kikcafe_fs") ?? "2", 10);
+if (!(fsIdx >= 0 && fsIdx < 5)) fsIdx = 2;
+function applyFs(){
+  document.documentElement.style.fontSize = FS_STEPS[fsIdx] + "px";
+  document.querySelectorAll("#fsizeBox button").forEach((b,i) => b.classList.toggle("on", i === fsIdx));
+}
+(function(){
+  const box = document.getElementById("fsizeBox");
+  FS_NAMES.forEach((n,i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = n;
+    b.addEventListener("click", () => { fsIdx = i; localStorage.setItem("kikcafe_fs", String(i)); applyFs(); });
+    box.appendChild(b);
+  });
+  applyFs();
+})();
+let themeIdx = parseInt(localStorage.getItem("kikcafe_theme") ?? "0", 10);
+if (!(themeIdx === 0 || themeIdx === 1)) themeIdx = 0;
+function applyTheme(){
+  document.documentElement.dataset.mode = themeIdx === 1 ? "dark" : "light";
+  document.querySelectorAll("#themeBox button").forEach((b,i) => b.classList.toggle("on", i === themeIdx));
+}
+(function(){
+  const tb = document.getElementById("themeBox");
+  ["白","黒"].forEach((n,i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = n;
+    b.addEventListener("click", () => { themeIdx = i; localStorage.setItem("kikcafe_theme", String(i)); applyTheme(); });
+    tb.appendChild(b);
+  });
+  applyTheme();
+})();
 </script>
 </body>
 </html>

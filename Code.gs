@@ -135,6 +135,15 @@ function doPost(e) {
     return jsonOut_({ ok: true, config: readConfig_() });
   }
 
+  if (data.action === 'chargeEntry') {
+    const charge = chargeApply_(data);
+    return jsonOut_({ ok: true, charge: charge });
+  }
+  if (data.action === 'chargeUndo') {
+    const charge = chargeUndo_(data);
+    return jsonOut_({ ok: true, charge: charge });
+  }
+
   if (data.action === 'useCoupon') {
     const values = sh.getDataRange().getValues();
     for (let i = 1; i < values.length; i++) {
@@ -171,6 +180,66 @@ function doPost(e) {
   return jsonOut_({ ok: true, code: c.code || '' });
 }
 
+/* ===== チャージ（お預かり残高） =====
+   お客様ごとに、預かったお金（in）とお会計での利用（out）を記録します。
+   残高はアプリ側で記録から計算します。正本はシート「charge」です。 */
+const CHARGE_SHEET = 'charge';
+
+function getChargeSheet_() {
+  const ss = book_();
+  let sh = ss.getSheetByName(CHARGE_SHEET);
+  if (!sh) {
+    sh = ss.insertSheet(CHARGE_SHEET);
+    sh.appendRow(['entryId', 'accountId', 'name', 'kind', 'amount', 'ts', 'memo']);
+  }
+  return sh;
+}
+
+function readCharge_() {
+  const sh = getChargeSheet_();
+  const values = sh.getDataRange().getValues();
+  const entries = [];
+  for (let i = 1; i < values.length; i++) {
+    if (!values[i][0]) continue;
+    entries.push({
+      entryId: String(values[i][0]),
+      accountId: String(values[i][1]),
+      name: String(values[i][2] || ''),
+      kind: String(values[i][3] || ''),
+      amount: Number(values[i][4]) || 0,
+      ts: values[i][5] instanceof Date ? values[i][5].toISOString() : String(values[i][5]),
+      memo: String(values[i][6] || '')
+    });
+  }
+  return { entries: entries };
+}
+
+function chargeApply_(p) {
+  const kind = String(p.kind || '');
+  if (['open', 'in', 'out'].indexOf(kind) < 0) throw new Error('bad kind');
+  const sh = getChargeSheet_();
+  const entryId = 'c' + new Date().getTime().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
+  sh.appendRow([
+    entryId,
+    String(p.accountId || ''),
+    String(p.name || '').slice(0, 60),
+    kind,
+    Number(p.amount) || 0,
+    p.ts || new Date().toISOString(),
+    String(p.memo || '').slice(0, 200)
+  ]);
+  return readCharge_();
+}
+
+function chargeUndo_(p) {
+  const sh = getChargeSheet_();
+  const values = sh.getDataRange().getValues();
+  for (let i = 1; i < values.length; i++) {
+    if (String(values[i][0]) === String(p.entryId)) { sh.deleteRow(i + 1); break; }
+  }
+  return readCharge_();
+}
+
 function makeCode_() {
   const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
   let s = '';
@@ -203,5 +272,5 @@ function doGet(e) {
       used: String(r[12]) === 'used'
     } : null
   }));
-  return jsonOut_({ responses: list, credit: readCredit_(), config: readConfig_() });
+  return jsonOut_({ responses: list, credit: readCredit_(), config: readConfig_(), charge: readCharge_() });
 }
