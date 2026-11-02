@@ -12,6 +12,8 @@
   h1{ font-size:1.375rem; margin:8px 0 12px; }
   h2{ font-size:1.125rem; margin:24px 0 10px; }
   .bar{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:12px; }
+  .bar.btns{ flex-wrap:nowrap; align-items:stretch; }
+  .bar.btns button{ flex:1 1 0; min-width:0; padding:12px 4px; font-size:1rem; line-height:1.4; background:#fff; border:1px solid var(--accent); color:var(--accent); border-radius:8px; cursor:pointer; }
   #refreshBtn{ padding:12px 22px; font-size:1rem; font-weight:bold; color:#fff; background:var(--accent); border:none; border-radius:8px; cursor:pointer; }
   #refreshBtn:disabled{ opacity:.5; }
   #csvBtn{ padding:12px 18px; font-size:1rem; background:#fff; border:1px solid var(--accent); color:var(--accent); border-radius:8px; cursor:pointer; }
@@ -68,10 +70,24 @@
   }
   html[data-mode="dark"]{ --ink:#e8ecf2; --bg:#101216; --card:#1b1e24; --line:#3a4152; --sub:#9aa7ba; --statusBg:#1d2733; --track:#262d3d; }
   html[data-mode="dark"] button[style*="background:#fff"]{ background:#262d3d !important; color:#e8ecf2 !important; }
+  html[data-mode="dark"] .bar.btns button{ background:#262d3d; color:#e8ecf2; border-color:#3a4152; }
   .dispbar{ display:flex; gap:18px; flex-wrap:wrap; align-items:center; margin:0 0 14px; }
   .dispbar .lbl2{ font-size:0.875rem; margin-right:2px; }
   .dispbar button{ padding:6px 12px; font-size:0.9375rem; background:var(--card); border:1px solid var(--line); color:var(--ink); border-radius:6px; cursor:pointer; margin-right:4px; }
   .dispbar button.on{ background:var(--accent); border-color:var(--accent); color:#fff; font-weight:bold; }
+  .tabbar{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:14px 0 6px; }
+  .tabbar button{ padding:12px 4px; font-size:1rem; line-height:1.4; background:#fff; border:1px solid var(--accent); color:var(--accent); border-radius:8px; cursor:pointer; }
+  .tabbar button.on{ background:var(--accent); color:#fff; font-weight:bold; }
+  html[data-mode="dark"] .tabbar button{ background:#262d3d; color:#e8ecf2; border-color:#3a4152; }
+  html[data-mode="dark"] .tabbar button.on{ background:var(--accent); color:#fff; }
+  .tabbar button.special{ border-color:#c9a227; color:#8a6d1a; background:#fdf6dd; }
+  .tabbar button.special.on{ background:#e9b949; border-color:#c9a227; color:#3d2f05; }
+  html[data-mode="dark"] .tabbar button.special{ background:#2e2a18; color:#e9cf7a; border-color:#8a7422; }
+  html[data-mode="dark"] .tabbar button.special.on{ background:#e9b949; color:#3d2f05; }
+  #page-credit .item{ border:2px solid #e3c565; }
+  .tabpage{ display:none; }
+  .tabpage.on{ display:block; }
+  .lead{ font-weight:600; margin:10px 0; }
 </style>
 <script>
 try {
@@ -86,24 +102,50 @@ try {
 <div class="wrap">
   <h1>KIKCAFE アンケート管理</h1>
   <div class="dispbar"><span><span class="lbl2">文字</span><span id="fsizeBox"></span></span><span><span class="lbl2">色</span><span id="themeBox"></span></span></div>
-  <div class="bar">
+  <div class="bar btns">
     <button id="refreshBtn" type="button">更新（新しい回答を取り込む）</button>
-    <button id="csvBtn" type="button">CSVで書き出す</button>
-    <button id="printBtn" type="button" style="padding:12px 18px;font-size:1rem;background:#fff;border:1px solid var(--accent);color:var(--accent);border-radius:8px;cursor:pointer;">集計レポートを印刷</button>
   </div>
   <div id="status">読み込み中です</div>
   <!-- お試しモード（めぐさんの最終OK後に削除する） -->
-  <div class="bar" style="margin-top:6px;">
+  <div class="bar btns" style="margin-top:6px;">
     <button id="modeNormalBtn" type="button">通常モード</button>
     <button id="modeDemoBtn" type="button">お試しモードで見る</button>
   </div>
   <div id="demoBanner" style="display:none;background:#fdf3e0;border:1px solid #e0b34e;color:#6b5510;border-radius:8px;padding:10px 12px;margin:8px 0;font-weight:600;">お試しモード中です。これはサンプルデータで、本番のデータには影響しません。</div>
+  <div class="tabbar" role="tablist">
+    <button type="button" data-tab="answers" class="on">回答</button>
+    <button type="button" data-tab="agg">集計</button>
+    <button type="button" data-tab="cal">カレンダー</button>
+    <button type="button" data-tab="coupon">クーポン</button>
+    <button type="button" data-tab="charge">チャージ</button>
+    <button type="button" data-tab="credit" class="special">★ 現物払い</button>
+  </div>
+
+  <div class="tabpage on" id="page-answers">
+  <input id="listSearch" type="search" placeholder="言葉で探す（例：紹介、ChatGPT、占い）" aria-label="回答を言葉で探す" style="width:100%;padding:12px;font-size:1rem;border:1px solid #c9c2b8;border-radius:8px;margin-bottom:6px;">
+  <p class="note" id="listFilterNote" style="margin:2px 0 8px;"></p>
   <div class="summary">
     <div class="sum"><div class="num" id="totalCount">0</div><div class="lbl">回答の総数</div></div>
     <div class="sum"><div class="num" id="avgAtmo">―</div><div class="lbl">雰囲気の平均（5点満点）</div></div>
     <div class="sum"><div class="num" id="couponUnused">0</div><div class="lbl">未使用のクーポン</div></div>
   </div>
 
+  <div class="bar btns">
+    <button id="csvBtn" type="button">CSVで書き出す</button>
+  </div>
+  <h2>回答の一覧</h2>
+  <div id="list"></div>
+  <p class="note">この画面を開いたときと、「更新」を押したときに、シートと連動します。シートで消した・直した内容は、そのまま反映されます。</p>
+  <div class="bar" style="margin-top:14px;">
+    <button id="resetStoreBtn" type="button" style="padding:10px 16px;font-size:1rem;background:#fff;border:1px solid #b3261e;color:#b3261e;border-radius:8px;cursor:pointer;">取り込み済みを初期化する</button>
+  </div>
+  <p class="note">アプリ側の控えだけを消して、シートから取り直します。シートのデータは消えません。シート側で消した行は、この初期化のあとはアプリからも消えます。</p>
+  </div>
+
+  <div class="tabpage" id="page-agg">
+  <div class="bar btns">
+    <button id="printBtn" type="button">集計レポートを印刷</button>
+  </div>
   <h2>集計：ご来店のきっかけ</h2>
   <div class="agg" id="aggSource"><p class="empty">まだ回答はありません</p></div>
   <h2>集計：誰と一緒に</h2>
@@ -111,6 +153,9 @@ try {
   <h2>集計：年代</h2>
   <div class="agg" id="aggAge"><p class="empty">まだ回答はありません</p></div>
 
+  </div>
+
+  <div class="tabpage" id="page-cal">
   <h2>日付から見る</h2>
   <div class="item">
     <div class="bar" style="justify-content:space-between;">
@@ -123,6 +168,9 @@ try {
     <p class="note">日付を押すと、その日の回答とチャージの記録が見られます。マスの中の数字は、その日の回答の件数です。</p>
   </div>
 
+  </div>
+
+  <div class="tabpage" id="page-coupon">
   <h2>クーポンの設定</h2>
   <div class="item">
     <div class="bar">
@@ -141,6 +189,25 @@ try {
   <input class="search" id="couponSearch" type="text" placeholder="クーポン番号で検索（例：KF-）">
   <div id="coupons"></div>
 
+  </div>
+
+  <div class="tabpage" id="page-charge">
+  <p class="lead">お客様のお金です。お客様から預かった分（入金）と、お会計で残高から払った分（利用）を記録します。</p>
+  <h2>チャージ（お預かり残高）</h2>
+  <div class="item">
+    <div id="chargeAccounts"></div>
+    <div class="bar" style="margin-top:10px;">
+      <input type="text" id="chargeNewName" placeholder="お客様のお名前（例：佐藤様）" style="flex:1;min-width:10em;font-size:1rem;padding:10px;border:1px solid var(--line);border-radius:8px;">
+      <button id="chargeNewBtn" type="button" style="padding:10px 16px;font-size:1rem;background:#fff;border:1px solid var(--accent);color:var(--accent);border-radius:8px;cursor:pointer;">新しいお客様を登録</button>
+    </div>
+    <div id="chargeHistory" style="margin-top:10px;"></div>
+    <p class="note">お客様から預かったお金（入金）と、お会計で残高から払った分（利用）を記録します。残高と履歴は、その場でお客様にお見せできます。</p>
+  </div>
+
+  </div>
+
+  <div class="tabpage" id="page-credit">
+  <p class="lead">増渕家のお金です。モニター料金の代わりに受けた現物払いの分で、増渕家が飲食で使った分を引いていきます。</p>
   <h2>モニター料金（現物払い）の残高 ― 増渕家</h2>
   <div class="item">
     <div class="bar">
@@ -161,26 +228,7 @@ try {
     <p class="note">モニター料金の代わりに受けた、飲食で使える現物払い分の残高です。使ったときに、その場で引いて記録します。</p>
   </div>
 
-  <h2>チャージ（お預かり残高）</h2>
-  <div class="item">
-    <div id="chargeAccounts"></div>
-    <div class="bar" style="margin-top:10px;">
-      <input type="text" id="chargeNewName" placeholder="お客様のお名前（例：佐藤様）" style="flex:1;min-width:10em;font-size:1rem;padding:10px;border:1px solid var(--line);border-radius:8px;">
-      <button id="chargeNewBtn" type="button" style="padding:10px 16px;font-size:1rem;background:#fff;border:1px solid var(--accent);color:var(--accent);border-radius:8px;cursor:pointer;">新しいお客様を登録</button>
-    </div>
-    <div id="chargeHistory" style="margin-top:10px;"></div>
-    <p class="note">お客様から預かったお金（入金）と、お会計で残高から払った分（利用）を記録します。残高と履歴は、その場でお客様にお見せできます。</p>
   </div>
-
-  <h2>回答の一覧</h2>
-  <input id="listSearch" type="search" placeholder="言葉で探す（例：紹介、ChatGPT、占い）" aria-label="回答を言葉で探す" style="width:100%;padding:12px;font-size:1rem;border:1px solid #c9c2b8;border-radius:8px;margin-bottom:6px;">
-  <p class="note" id="listFilterNote" style="margin:2px 0 8px;"></p>
-  <div id="list"></div>
-  <p class="note">この画面を開いたときと、「更新」を押したときに、シートと連動します。シートで消した・直した内容は、そのまま反映されます。</p>
-  <div class="bar" style="margin-top:14px;">
-    <button id="resetStoreBtn" type="button" style="padding:10px 16px;font-size:1rem;background:#fff;border:1px solid #b3261e;color:#b3261e;border-radius:8px;cursor:pointer;">取り込み済みを初期化する</button>
-  </div>
-  <p class="note">アプリ側の控えだけを消して、シートから取り直します。シートのデータは消えません。シート側で消した行は、この初期化のあとはアプリからも消えます。</p>
 </div>
 <script>
 "use strict";
@@ -192,6 +240,15 @@ const INBOX_KEY = "survey_proto_inbox_v3";
 const STORE_KEY = "survey_proto_app_v3";
 const BACKUP_KEY = "survey_proto_app_v3_backup"; /* 連動で置き換える直前の控え（1世代分の保険） */
 const ATMO_SCORE = { "とても満足":5, "やや満足":4, "普通":3, "やや不満":2, "とても不満":1 };
+
+/* ===== タブ切り替え ===== */
+document.querySelectorAll(".tabbar button").forEach(function(btn){
+  btn.addEventListener("click", function(){
+    document.querySelectorAll(".tabbar button").forEach(function(b){ b.classList.toggle("on", b === btn); });
+    document.querySelectorAll(".tabpage").forEach(function(pg){ pg.classList.toggle("on", pg.id === "page-" + btn.dataset.tab); });
+    window.scrollTo(0, 0);
+  });
+});
 
 const statusEl = document.getElementById("status");
 const listEl = document.getElementById("list");
