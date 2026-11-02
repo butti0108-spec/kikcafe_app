@@ -121,7 +121,11 @@
 
   <h2>回答の一覧</h2>
   <div id="list"></div>
-  <p class="note">この画面を開いたときと、「更新」を押したときに、新しい回答を取り込みます。取り込み済みの回答は、二重には入りません。</p>
+  <p class="note">この画面を開いたときと、「更新」を押したときに、シートと連動します。シートで消した・直した内容は、そのまま反映されます。</p>
+  <div class="bar" style="margin-top:14px;">
+    <button id="resetStoreBtn" type="button" style="padding:10px 16px;font-size:1rem;background:#fff;border:1px solid #b3261e;color:#b3261e;border-radius:8px;cursor:pointer;">取り込み済みを初期化する</button>
+  </div>
+  <p class="note">アプリ側の控えだけを消して、シートから取り直します。シートのデータは消えません。シート側で消した行は、この初期化のあとはアプリからも消えます。</p>
 </div>
 <script>
 "use strict";
@@ -131,6 +135,7 @@
 const GAS_URL = "https://script.google.com/macros/s/AKfycbzx28cBPtdGpbPS9Lc9Aq26qsVDD1IptbI01nLfdY5iJFKmXpNHkgKOHMY00xYQQNE/exec";
 const INBOX_KEY = "survey_proto_inbox_v3";
 const STORE_KEY = "survey_proto_app_v3";
+const BACKUP_KEY = "survey_proto_app_v3_backup"; /* 連動で置き換える直前の控え（1世代分の保険） */
 const ATMO_SCORE = { "とても満足":5, "やや満足":4, "普通":3, "やや不満":2, "とても不満":1 };
 
 const statusEl = document.getElementById("status");
@@ -270,22 +275,21 @@ async function refresh(){
   statusEl.textContent = "新しい回答を確認しています";
   try {
     const all = await fetchAll();
-    const inbox = all.responses;
+    const inbox = (all.responses || []).filter(r => r && r.id);
     if (GAS_URL && all.credit) { serverCredit = all.credit; renderCredit(); }
     if (GAS_URL && all.config) { serverConfig = all.config; }
     renderConfig();
-    const store = loadStore();
-    const byId = new Map(store.map(r => [r.id, r]));
+    /* 完全連動：アプリの一覧はシートの鏡にする（シートで消せば消え、直せば直る）。
+       置き換える前に、直前の控えを1世代だけ保険として残す */
+    const before = loadStore();
+    const beforeIds = new Set(before.map(r => r.id));
     let freshCount = 0;
-    (inbox || []).forEach(r => {
-      if (!r || !r.id) return;
-      if (!byId.has(r.id)) { store.push(r); byId.set(r.id, r); freshCount++; }
-      else if (r.coupon && byId.get(r.id).coupon) {
-        byId.get(r.id).coupon.used = !!r.coupon.used;
-      }
-    });
-    saveStore(store);
-    statusEl.textContent = freshCount ? freshCount + "件の新しい回答を取り込みました" : "新しい回答はありません";
+    inbox.forEach(r => { if (!beforeIds.has(r.id)) freshCount++; });
+    if (before.length) {
+      try { localStorage.setItem(BACKUP_KEY, JSON.stringify(before)); } catch(e) {}
+    }
+    saveStore(inbox);
+    statusEl.textContent = freshCount ? freshCount + "件の新しい回答を取り込みました" : "シートと連動しました（新しい回答はありません）";
   } catch(e) {
     statusEl.textContent = "読み込みに失敗しました。通信環境をご確認ください";
   }
@@ -294,6 +298,12 @@ async function refresh(){
 }
 
 document.getElementById("refreshBtn").addEventListener("click", refresh);
+document.getElementById("resetStoreBtn").addEventListener("click", async () => {
+  if (!confirm("アプリに取り込み済みの控えを消して、シートから取り直します。シートのデータは消えません。よろしいですか。")) return;
+  localStorage.removeItem(STORE_KEY);
+  render();
+  await refresh();
+});
 document.getElementById("couponSearch").addEventListener("input", render);
 document.getElementById("csvBtn").addEventListener("click", () => {
   const rows = loadStore().slice().sort((a,b) => (a.ts||"").localeCompare(b.ts||""));
