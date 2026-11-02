@@ -15,7 +15,7 @@ function book_() { return SpreadsheetApp.openById(SPREADSHEET_ID); }
 const SHEET_NAME = 'responses';
 const HEADER = ['id', 'ts', 'age', 'gender', 'companion', 'source', 'sourceNote',
                 'atmosphere', 'comment', 'couponCode', 'couponTitle', 'couponExpires', 'couponUsed',
-                'wish', 'entry'];
+                'wish', 'entry', 'atmoReason', 'entryNote'];
 
 function getSheet_() {
   const ss = book_();
@@ -204,7 +204,9 @@ function doPost(e) {
     c.expires || '',
     c.used ? 'used' : '',
     String(data.wish || ''),
-    String(data.entry || '')
+    String(data.entry || ''),
+    String(data.atmoReason || ''),
+    String(data.entryNote || '')
   ]);
   return jsonOut_({ ok: true, code: c.code || '' });
 }
@@ -301,7 +303,9 @@ function doGet(e) {
       used: String(r[12]) === 'used'
     } : null,
     wish: String(r[13] || ''),
-    entry: String(r[14] || '')
+    entry: String(r[14] || ''),
+    atmoReason: String(r[15] || ''),
+    entryNote: String(r[16] || '')
   }));
   return jsonOut_({ responses: list, credit: readCredit_(), config: readConfig_(), charge: readCharge_() });
 }

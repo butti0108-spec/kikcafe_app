@@ -391,7 +391,7 @@ function render(){
   const listNoteEl = document.getElementById("listFilterNote");
   if (!rows.length){ listEl.innerHTML = '<p class="empty">まだ回答はありません</p>'; listNoteEl.textContent = ""; return; }
   const lq = listQuery.trim().toLowerCase();
-  const shownRows = lq ? rows.filter(r => [r.age, r.gender, r.companion, r.source, r.sourceNote, r.atmosphere, r.wish, r.entry, r.comment, r.coupon ? r.coupon.code : ""].join(" ").toLowerCase().includes(lq)) : rows;
+  const shownRows = lq ? rows.filter(r => [r.age, r.gender, r.companion, r.source, r.sourceNote, r.atmosphere, r.atmoReason, r.wish, r.entry, r.entryNote, r.comment, r.coupon ? r.coupon.code : ""].join(" ").toLowerCase().includes(lq)) : rows;
   listNoteEl.textContent = lq ? ("「" + listQuery.trim() + "」を含む回答：" + shownRows.length + "件") : "";
   if (!shownRows.length){ listEl.innerHTML = '<p class="empty">その言葉を含む回答はありません</p>'; return; }
   listEl.innerHTML = shownRows.map(r => {
@@ -404,8 +404,10 @@ function render(){
       (who ? '<dt>性別・年齢</dt><dd>' + esc(who) + '</dd>' : '') +
       (r.companion ? '<dt>誰と一緒に</dt><dd>' + esc(r.companion) + '</dd>' : '') +
       (r.atmosphere ? '<dt>お店の雰囲気</dt><dd>' + esc(r.atmosphere) + '</dd>' : '') +
+      (r.atmoReason ? '<dt>雰囲気の理由</dt><dd>' + esc(r.atmoReason) + '</dd>' : '') +
       (r.wish ? '<dt>あったら嬉しいもの</dt><dd>' + esc(r.wish) + '</dd>' : '') +
       (r.entry ? '<dt>入りにくさ</dt><dd>' + esc(r.entry) + '</dd>' : '') +
+      (r.entryNote ? '<dt>入りやすくするには</dt><dd>' + esc(r.entryNote) + '</dd>' : '') +
       (r.comment ? '<dt>改善点・感想・興味のあること</dt><dd>' + esc(r.comment) + '</dd>' : '') +
       (r.coupon ? '<dt>発行クーポン</dt><dd>' + esc(r.coupon.code) + '（' + (r.coupon.used ? "使用済み" : "未使用") + '）</dd>' : '') +
       '</dl></div>';
@@ -484,11 +486,11 @@ document.getElementById("couponSearch").addEventListener("input", render);
 document.getElementById("listSearch").addEventListener("input", (e) => { listQuery = e.target.value; render(); });
 document.getElementById("csvBtn").addEventListener("click", () => {
   const rows = loadStore().slice().sort((a,b) => (a.ts||"").localeCompare(b.ts||""));
-  const head = ["日時","年代","性別","誰と一緒に","ご来店のきっかけ","きっかけ（紹介者・その他）","お店の雰囲気","あったら嬉しいもの","入りにくさ","改善点・感想・興味のあること","クーポン番号","クーポン状態"];
+  const head = ["日時","年代","性別","誰と一緒に","ご来店のきっかけ","きっかけ（紹介者・その他）","お店の雰囲気","雰囲気の理由","あったら嬉しいもの","入りにくさ","入りやすくするには","改善点・感想・興味のあること","クーポン番号","クーポン状態"];
   const e = v => '"' + String(v == null ? "" : v).replace(/"/g,'""') + '"';
   const lines = [head.map(e).join(",")].concat(rows.map(r => [
     fmtDate(r.ts), r.age || "", r.gender || "", r.companion || "", r.source || "", r.sourceNote || "",
-    r.atmosphere || "", r.wish || "", r.entry || "", r.comment || "",
+    r.atmosphere || "", r.atmoReason || "", r.wish || "", r.entry || "", r.entryNote || "", r.comment || "",
     r.coupon ? r.coupon.code : "", r.coupon ? (r.coupon.used ? "使用済み" : "未使用") : ""
   ].map(e).join(",")));
   const blob = new Blob(["\uFEFF" + lines.join("\r\n")], { type: "text/csv" });
@@ -634,7 +636,7 @@ let demoCredit = null;
 let demoCharge = null;
 
 const SAMPLE_ROWS = [
-  { id:"sample1", ts:"2026-10-20T03:00:00.000Z", age:"60代以上", gender:"女性", companion:"1人", source:"通りがかり", sourceNote:"", atmosphere:"とても満足", wish:"静かに過ごせる席", entry:"特になかった", comment:"静かで落ち着きます", coupon:{ code:"KF-D3K8Q2", title:"次回ドリンク 200円引き", expires:"2026/11/19", used:true } },
+  { id:"sample1", ts:"2026-10-20T03:00:00.000Z", age:"60代以上", gender:"女性", companion:"1人", source:"通りがかり", sourceNote:"", atmosphere:"とても満足", wish:"静かに過ごせる席", entry:"特になかった", atmoReason:"静かで落ち着くからです", comment:"静かで落ち着きます", coupon:{ code:"KF-D3K8Q2", title:"次回ドリンク 200円引き", expires:"2026/11/19", used:true } },
   { id:"sample2", ts:"2026-10-21T03:00:00.000Z", age:"40代", gender:"男性", companion:"仕事仲間", source:"紹介", sourceNote:"田中さんの紹介", atmosphere:"やや満足", comment:"Wi-Fiがあると助かります", coupon:{ code:"KF-M7P2X9", title:"次回ドリンク 200円引き", expires:"2026/10/31", used:false } },
   { id:"sample3", ts:"2026-10-23T03:00:00.000Z", age:"30代", gender:"女性", companion:"友人", source:"ChatGPT", sourceNote:"", atmosphere:"とても満足", comment:"ChatGPTにおすすめされて来ました", coupon:{ code:"KF-Q4N6B8", title:"次回ドリンク 200円引き", expires:"2026/11/22", used:false } },
   { id:"sample4", ts:"2026-10-24T03:00:00.000Z", age:"20代", gender:"女性", companion:"1人", source:"SNS", sourceNote:"", atmosphere:"とても満足", wish:"甘いもの・ケーキ", entry:"特になかった", comment:"写真で見たケーキが気になって来ました", coupon:{ code:"KF-T9W3E5", title:"次回ドリンク 200円引き", expires:"2026/11/23", used:true } },
@@ -642,7 +644,7 @@ const SAMPLE_ROWS = [
   { id:"sample6", ts:"2026-10-27T03:00:00.000Z", age:"40代", gender:"女性", companion:"友人", source:"紹介", sourceNote:"常連の佐藤さんの紹介", atmosphere:"とても満足", wish:"占い、イベント・講座", entry:"特になかった", comment:"占いのある日に来てみたいです", coupon:{ code:"KF-S8D5F6", title:"次回ドリンク 200円引き", expires:"2026/11/26", used:false } },
   { id:"sample7", ts:"2026-10-28T03:00:00.000Z", age:"30代", gender:"男性", companion:"1人", source:"グルメ情報サイト", sourceNote:"", atmosphere:"やや満足", wish:"お食事メニュー", entry:"特になかった", comment:"ランチの種類が増えると嬉しいです", coupon:{ code:"KF-G6H9J2", title:"次回ドリンク 200円引き", expires:"2026/11/27", used:false } },
   { id:"sample8", ts:"2026-10-29T03:00:00.000Z", age:"60代以上", gender:"女性", companion:"友人", source:"ブログ", sourceNote:"", atmosphere:"とても満足", comment:"手作りの雰囲気が好きです", coupon:{ code:"KF-K3L7M9", title:"次回ドリンク 200円引き", expires:"2026/11/28", used:true } },
-  { id:"sample9", ts:"2026-10-30T03:00:00.000Z", age:"20代", gender:"男性", companion:"1人", source:"グーグル", sourceNote:"", atmosphere:"やや不満", wish:"ドリンクの種類", entry:"入口の様子で迷った", comment:"入口が少し分かりにくかったです", coupon:{ code:"KF-N5P8Q3", title:"次回ドリンク 200円引き", expires:"2026/11/29", used:false } },
+  { id:"sample9", ts:"2026-10-30T03:00:00.000Z", age:"20代", gender:"男性", companion:"1人", source:"グーグル", sourceNote:"", atmosphere:"やや不満", wish:"ドリンクの種類", entry:"入口の様子で迷った", entryNote:"中の様子が少し見えると入りやすいと思います", comment:"入口が少し分かりにくかったです", coupon:{ code:"KF-N5P8Q3", title:"次回ドリンク 200円引き", expires:"2026/11/29", used:false } },
   { id:"sample10", ts:"2026-10-31T03:00:00.000Z", age:"50代", gender:"女性", companion:"家族", source:"通りがかり", sourceNote:"", atmosphere:"やや満足", comment:"季節のスイーツを楽しみにしています", coupon:{ code:"KF-W2E4R6", title:"次回ドリンク 200円引き", expires:"2026/11/30", used:false } },
   { id:"sample11", ts:"2026-11-01T03:00:00.000Z", age:"30代", gender:"女性", companion:"仕事仲間", source:"紹介", sourceNote:"職場の同僚の紹介", atmosphere:"とても満足", comment:"マッサージの帰りに寄りました", coupon:{ code:"KF-Y7U9I2", title:"次回ドリンク 200円引き", expires:"2026/12/01", used:false } },
   { id:"sample12", ts:"2026-11-02T03:00:00.000Z", age:"40代", gender:"女性", companion:"1人", source:"ホームページ", sourceNote:"", atmosphere:"とても満足", comment:"新メニューの案内をSNSで見たいです", coupon:{ code:"KF-O4P6A8", title:"次回ドリンク 200円引き", expires:"2026/12/02", used:false } }
@@ -912,8 +914,10 @@ function renderCalendar(){
       (who ? '<dt>性別・年齢</dt><dd>' + esc(who) + '</dd>' : '') +
       (r.companion ? '<dt>誰と一緒に</dt><dd>' + esc(r.companion) + '</dd>' : '') +
       (r.atmosphere ? '<dt>お店の雰囲気</dt><dd>' + esc(r.atmosphere) + '</dd>' : '') +
+      (r.atmoReason ? '<dt>雰囲気の理由</dt><dd>' + esc(r.atmoReason) + '</dd>' : '') +
       (r.wish ? '<dt>あったら嬉しいもの</dt><dd>' + esc(r.wish) + '</dd>' : '') +
       (r.entry ? '<dt>入りにくさ</dt><dd>' + esc(r.entry) + '</dd>' : '') +
+      (r.entryNote ? '<dt>入りやすくするには</dt><dd>' + esc(r.entryNote) + '</dd>' : '') +
       (r.comment ? '<dt>改善点・感想・興味のあること</dt><dd>' + esc(r.comment) + '</dd>' : '') +
       (r.coupon ? '<dt>発行クーポン</dt><dd>' + esc(r.coupon.code) + '（' + (r.coupon.used ? "使用済み" : "未使用") + '）</dd>' : '') +
       '</dl></div>';
@@ -974,7 +978,7 @@ function buildPrint(){
     const who = [r.age, r.gender].filter(Boolean).join("・");
     const source = (r.source || "") + (r.sourceNote ? "（" + r.sourceNote + "）" : "");
     return '<tr><td>' + fmtDate(r.ts) + '</td><td>' + esc(who) + '</td><td>' + esc(r.companion || "") +
-      '</td><td>' + esc(source) + '</td><td>' + esc(r.atmosphere || "") + '</td><td>' + esc(r.wish || "") + '</td><td>' + esc(r.entry || "") + '</td><td>' + esc(r.comment || "") +
+      '</td><td>' + esc(source) + '</td><td>' + esc(r.atmosphere || "") + '</td><td>' + esc(r.atmoReason || "") + '</td><td>' + esc(r.wish || "") + '</td><td>' + esc(r.entry || "") + '</td><td>' + esc(r.entryNote || "") + '</td><td>' + esc(r.comment || "") +
       '</td><td>' + (r.coupon ? esc(r.coupon.code) + "<br>" + (r.coupon.used ? "使用済み" : "未使用") : "") + '</td></tr>';
   }).join("");
   document.getElementById("printArea").innerHTML =
@@ -991,7 +995,7 @@ function buildPrint(){
     '<h2>モニター料金（現物払い）の残高 ― 増渕家</h2>' +
     '<p>残高 ' + yen(credit.total - creditUsed) + '（総額 ' + yen(credit.total) + '／使った合計 ' + yen(creditUsed) + '）</p>' +
     '<h2>回答の一覧</h2>' +
-    (total ? '<table><tr><th>日時</th><th>性別・年齢</th><th>誰と</th><th>きっかけ</th><th>雰囲気</th><th>嬉しいもの</th><th>入りにくさ</th><th>改善点・感想など</th><th>クーポン</th></tr>' + listRows + '</table>' : '<p>回答なし</p>');
+    (total ? '<table><tr><th>日時</th><th>性別・年齢</th><th>誰と</th><th>きっかけ</th><th>雰囲気</th><th>理由</th><th>嬉しいもの</th><th>入りにくさ</th><th>入りやすくするには</th><th>改善点・感想など</th><th>クーポン</th></tr>' + listRows + '</table>' : '<p>回答なし</p>');
 }
 document.getElementById("printBtn").addEventListener("click", () => { buildPrint(); window.print(); });
 window.addEventListener("beforeprint", buildPrint);

@@ -55,6 +55,7 @@ try {
   <div id="formArea">
     <h1>アンケートにご協力お願いします</h1>
     <p class="lead">KIKCAFEにご来店ありがとうございます。当てはまる項目をお選びください。ご回答いただいた方には、次回使えるクーポンをお渡ししています。</p>
+    <p class="note">このアンケートでは、お名前やご連絡先はお聞きしません。ご回答は、どなたのものか分からない形で、内容だけを集計します。</p>
   <div class="dispbar"><span><span class="lbl2">文字</span><span id="fsizeBox"></span></span><span><span class="lbl2">色</span><span id="themeBox"></span></span></div>
     <form id="survey">
       <div class="card">
@@ -98,6 +99,8 @@ try {
         <label class="opt"><input type="radio" name="atmosphere" value="普通">普通</label>
         <label class="opt"><input type="radio" name="atmosphere" value="やや不満">やや不満</label>
         <label class="opt"><input type="radio" name="atmosphere" value="とても不満">とても不満</label>
+        <p class="note">よろしければ、その理由も教えてください（任意）</p>
+        <textarea name="atmoReason" placeholder="例：静かで落ち着く、など"></textarea>
       </div>
       <div class="card">
         <h2>Q5. KIKCAFEにあったら嬉しいもの（任意・いくつでも）</h2>
@@ -106,6 +109,8 @@ try {
       <div class="card">
         <h2>Q6. 初めて来たとき、入りにくさはありましたか（任意）</h2>
         <div id="entryBox"></div>
+        <p class="note">入りにくかった場合、どうなっていたら入りやすかったか、よろしければ教えてください（任意）</p>
+        <textarea name="entryNote" placeholder="ご自由にご記入ください"></textarea>
       </div>
       <div class="card">
         <h2>Q7. 改善点や感想・KIKCAFEで興味があることなど、自由にご記入ください</h2>
@@ -113,7 +118,8 @@ try {
       </div>
       <button class="submit" type="submit" id="sendBtn">送信してクーポンを受け取る</button>
       <div id="err">送信できませんでした。通信環境をご確認のうえ、もう一度お試しください。</div>
-      <p class="note">ご回答は、お店の改善のためにのみ使用いたします。</p>
+      <p class="note"><strong>個人情報の取り扱いについて</strong><br>
+      このアンケートでは、お名前・ご住所・電話番号・メールアドレスなどの個人情報はお聞きしません。ご回答は、どなたの回答か分からない形で集計し、お店の改善のためにのみ使用します。回答の内容を、ご本人の許可なく第三者に渡すことはありません。クーポンの番号は、発行と利用の管理のためだけに使います。</p>
     </form>
   </div>
   <div id="done">
@@ -208,8 +214,10 @@ document.getElementById("survey").addEventListener("submit", async (ev) => {
     source: fd.get("source") || "",
     sourceNote: (fd.get("sourceNote") || "").trim(),
     atmosphere: fd.get("atmosphere") || "",
+    atmoReason: (fd.get("atmoReason") || "").trim(),
     wish: fd.getAll("wish").join("、"),
     entry: fd.get("entry") || "",
+    entryNote: (fd.get("entryNote") || "").trim(),
     comment: (fd.get("comment") || "").trim(),
     coupon: { code: code, title: couponTitle, expires: fmtDate(exp), used: false }
   };
