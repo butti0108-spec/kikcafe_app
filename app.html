@@ -120,6 +120,8 @@
   </div>
 
   <h2>回答の一覧</h2>
+  <input id="listSearch" type="search" placeholder="言葉で探す（例：紹介、ChatGPT、占い）" aria-label="回答を言葉で探す" style="width:100%;padding:12px;font-size:1rem;border:1px solid #c9c2b8;border-radius:8px;margin-bottom:6px;">
+  <p class="note" id="listFilterNote" style="margin:2px 0 8px;"></p>
   <div id="list"></div>
   <p class="note">この画面を開いたときと、「更新」を押したときに、シートと連動します。シートで消した・直した内容は、そのまま反映されます。</p>
   <div class="bar" style="margin-top:14px;">
@@ -140,6 +142,7 @@ const ATMO_SCORE = { "とても満足":5, "やや満足":4, "普通":3, "やや�
 
 const statusEl = document.getElementById("status");
 const listEl = document.getElementById("list");
+let listQuery = "";
 const couponsEl = document.getElementById("coupons");
 
 function loadStore(){ try { return JSON.parse(localStorage.getItem(STORE_KEY) || "[]"); } catch(e){ return []; } }
@@ -229,8 +232,13 @@ function render(){
     btn.addEventListener("click", () => toggleCoupon(btn.getAttribute("data-code")));
   });
 
-  if (!rows.length){ listEl.innerHTML = '<p class="empty">まだ回答はありません</p>'; return; }
-  listEl.innerHTML = rows.map(r => {
+  const listNoteEl = document.getElementById("listFilterNote");
+  if (!rows.length){ listEl.innerHTML = '<p class="empty">まだ回答はありません</p>'; listNoteEl.textContent = ""; return; }
+  const lq = listQuery.trim().toLowerCase();
+  const shownRows = lq ? rows.filter(r => [r.age, r.gender, r.companion, r.source, r.sourceNote, r.atmosphere, r.comment, r.coupon ? r.coupon.code : ""].join(" ").toLowerCase().includes(lq)) : rows;
+  listNoteEl.textContent = lq ? ("「" + listQuery.trim() + "」を含む回答：" + shownRows.length + "件") : "";
+  if (!shownRows.length){ listEl.innerHTML = '<p class="empty">その言葉を含む回答はありません</p>'; return; }
+  listEl.innerHTML = shownRows.map(r => {
     const who = [r.age, r.gender].filter(Boolean).join("・");
     const source = (r.source || "") + (r.sourceNote ? "（" + r.sourceNote + "）" : "");
     return '<div class="item">' +
@@ -305,6 +313,7 @@ document.getElementById("resetStoreBtn").addEventListener("click", async () => {
   await refresh();
 });
 document.getElementById("couponSearch").addEventListener("input", render);
+document.getElementById("listSearch").addEventListener("input", (e) => { listQuery = e.target.value; render(); });
 document.getElementById("csvBtn").addEventListener("click", () => {
   const rows = loadStore().slice().sort((a,b) => (a.ts||"").localeCompare(b.ts||""));
   const head = ["日時","年代","性別","誰と一緒に","ご来店のきっかけ","きっかけ（紹介者・その他）","お店の雰囲気","改善点・感想・興味のあること","クーポン番号","クーポン状態"];
