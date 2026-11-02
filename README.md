@@ -34,7 +34,8 @@
 - 受け口URL（GAS_URL、form.html / app.html の両方に設定済み）: https://script.google.com/macros/s/AKfycbzx28cBPtdGpbPS9Lc9Aq26qsVDD1IptbI01nLfdY5iJFKmXpNHkgKOHMY00xYQQNE/exec
 - 回答の保存先シート「KIKCAFE アンケート回答」: https://docs.google.com/spreadsheets/d/1JoyZ9kDN8inpkLcuZ_d_2gcJwJA6QjYAsoGaDTUR6YM/edit
 - 通し確認済み（2026-11-02）: 回答の送信→シート登録→読み出し／残高の利用記録（800円）→取消。テストデータは削除済みで、シートは空の状態
-- 残り: form.html / app.html の公開（GitHub Pages）と、フォームURLのQRコード作成
+- 公開済み（GitHub Pages、2026-11-02）: フォーム https://butti0108-spec.github.io/kikcafe_app/form.html ／ 管理画面 https://butti0108-spec.github.io/kikcafe_app/app.html（どちらも公開ページに本番の受け口URLが入っていることを確認済み）
+- QRコード（フォームURL、読み取り確認済み）: qr_form.png
 
 ## 本番にする手順（Apps Script連携）
 
