@@ -90,7 +90,9 @@ try {
         <label class="opt"><input type="radio" name="source" value="グーグル">グーグル</label>
         <label class="opt"><input type="radio" name="source" value="グルメ情報サイト">グルメ情報サイト</label>
         <label class="opt"><input type="radio" name="source" value="その他">その他</label>
-        <input type="text" name="sourceNote" placeholder="紹介の場合はどなたの紹介か、その他の場合はその内容をお聞かせください">
+        <div id="sourceNoteWrap" style="display:none">
+          <input type="text" name="sourceNote" id="sourceNoteInput" placeholder="どなたの紹介か教えてください（任意）">
+        </div>
       </div>
       <div class="card">
         <h2>Q4. お店の雰囲気</h2>
@@ -105,6 +107,9 @@ try {
       <div class="card">
         <h2>Q5. KIKCAFEにあったら嬉しいもの（任意・いくつでも）</h2>
         <div id="wishBox"></div>
+        <div id="wishOtherWrap" style="display:none">
+          <input type="text" name="wishOther" id="wishOtherInput" placeholder="「その他」の内容を教えてください（任意）">
+        </div>
       </div>
       <div class="card">
         <h2>Q6. 初めて来たとき、入りにくさはありましたか（任意）</h2>
@@ -150,6 +155,17 @@ let couponTitle = "次回ドリンク 200円引き";
 let couponDays = 30;
 const WISH_DEFAULTS = ["甘いもの・ケーキ","ドリンクの種類","お食事メニュー","占い","イベント・講座","静かに過ごせる席","その他"];
 const ENTRY_DEFAULTS = ["特になかった","お店の場所が分かりにくかった","入口の様子で迷った","中が見えなくて様子が分からなかった","その他"];
+function syncConditionalFields(){
+  const src = (new FormData(document.getElementById("survey"))).get("source") || "";
+  const sw = document.getElementById("sourceNoteWrap");
+  const si = document.getElementById("sourceNoteInput");
+  if (src === "紹介"){ sw.style.display = ""; si.placeholder = "どなたの紹介か教えてください（任意）"; }
+  else if (src === "その他"){ sw.style.display = ""; si.placeholder = "よろしければ内容を教えてください（任意）"; }
+  else { sw.style.display = "none"; }
+  const other = document.querySelector('input[name="wish"][value="その他"]');
+  document.getElementById("wishOtherWrap").style.display = (other && other.checked) ? "" : "none";
+}
+document.getElementById("survey").addEventListener("change", syncConditionalFields);
 function renderChoices(){
   const cfg = window._surveyCfg || {};
   const wish = (Array.isArray(cfg.wishItems) && cfg.wishItems.length) ? cfg.wishItems : WISH_DEFAULTS;
@@ -167,8 +183,10 @@ function applyConfig(cfg){
   if (Number(cfg.couponDays)) couponDays = Number(cfg.couponDays);
   document.getElementById("couponTitleText").textContent = couponTitle + "クーポン";
   renderChoices();
+  syncConditionalFields();
 }
 renderChoices();
+syncConditionalFields();
 if (GAS_URL) {
   fetch(GAS_URL + "?mode=config").then(r => r.json()).then(j => {
     if (j && j.config) applyConfig(j.config);
@@ -212,10 +230,11 @@ document.getElementById("survey").addEventListener("submit", async (ev) => {
     gender: fd.get("gender") || "",
     companion: fd.get("companion") || "",
     source: fd.get("source") || "",
-    sourceNote: (fd.get("sourceNote") || "").trim(),
+    sourceNote: ((fd.get("source") === "紹介" || fd.get("source") === "その他") ? (fd.get("sourceNote") || "").trim() : ""),
     atmosphere: fd.get("atmosphere") || "",
     atmoReason: (fd.get("atmoReason") || "").trim(),
     wish: fd.getAll("wish").join("、"),
+    wishOther: (fd.getAll("wish").includes("その他") ? (fd.get("wishOther") || "").trim() : ""),
     entry: fd.get("entry") || "",
     entryNote: (fd.get("entryNote") || "").trim(),
     comment: (fd.get("comment") || "").trim(),
