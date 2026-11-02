@@ -14,7 +14,8 @@ function book_() { return SpreadsheetApp.openById(SPREADSHEET_ID); }
 
 const SHEET_NAME = 'responses';
 const HEADER = ['id', 'ts', 'age', 'gender', 'companion', 'source', 'sourceNote',
-                'atmosphere', 'comment', 'couponCode', 'couponTitle', 'couponExpires', 'couponUsed'];
+                'atmosphere', 'comment', 'couponCode', 'couponTitle', 'couponExpires', 'couponUsed',
+                'wish', 'entry'];
 
 function getSheet_() {
   const ss = book_();
@@ -22,6 +23,12 @@ function getSheet_() {
   if (!sh) {
     sh = ss.insertSheet(SHEET_NAME);
     sh.appendRow(HEADER);
+  } else if (sh.getLastRow() >= 1) {
+    /* 既存シートに新しい列（wish / entry）の見出しが無ければ補う */
+    const head = sh.getRange(1, 1, 1, HEADER.length).getValues()[0];
+    for (let i = 0; i < HEADER.length; i++) {
+      if (!head[i]) sh.getRange(1, i + 1).setValue(HEADER[i]);
+    }
   }
   return sh;
 }
@@ -34,6 +41,12 @@ function jsonOut_(obj) {
 
 const CONFIG_SHEET = 'config';
 const CONFIG_DEFAULTS = { couponTitle: '次回ドリンク 200円引き', couponDays: 30 };
+const WISH_DEFAULTS = ['甘いもの・ケーキ', 'ドリンクの種類', 'お食事メニュー', '占い', 'イベント・講座', '静かに過ごせる席', 'その他'];
+const ENTRY_DEFAULTS = ['特になかった', 'お店の場所が分かりにくかった', '入口の様子で迷った', '中が見えなくて様子が分からなかった', 'その他'];
+function parseItems_(v, defaults) {
+  const items = String(v || '').split('\n').map(x => x.trim()).filter(Boolean);
+  return items.length ? items : defaults.slice();
+}
 
 function getConfigSheet_() {
   const ss = book_();
@@ -48,12 +61,18 @@ function getConfigSheet_() {
 function readConfig_() {
   const sh = getConfigSheet_();
   const values = sh.getDataRange().getValues();
-  const cfg = { couponTitle: CONFIG_DEFAULTS.couponTitle, couponDays: CONFIG_DEFAULTS.couponDays };
+  const cfg = { couponTitle: CONFIG_DEFAULTS.couponTitle, couponDays: CONFIG_DEFAULTS.couponDays,
+                wishItems: WISH_DEFAULTS.slice(), entryItems: ENTRY_DEFAULTS.slice() };
   for (let i = 1; i < values.length; i++) {
     if (values[i][0] === 'couponTitle' && values[i][1]) cfg.couponTitle = String(values[i][1]);
     else if (values[i][0] === 'couponDays' && Number(values[i][1])) cfg.couponDays = Number(values[i][1]);
+    else if (values[i][0] === 'wishItems') cfg.wishItems = parseItems_(values[i][1], WISH_DEFAULTS);
+    else if (values[i][0] === 'entryItems') cfg.entryItems = parseItems_(values[i][1], ENTRY_DEFAULTS);
   }
   return cfg;
+}
+function cleanItems_(text) {
+  return String(text || '').split('\n').map(x => x.trim().slice(0, 40)).filter(Boolean).slice(0, 12).join('\n');
 }
 
 function setConfig_(key, value) {
@@ -135,6 +154,14 @@ function doPost(e) {
     return jsonOut_({ ok: true, config: readConfig_() });
   }
 
+  if (data.action === 'configSurvey') {
+    const w = cleanItems_(data.wishItems);
+    if (w) setConfig_('wishItems', w);
+    const e2 = cleanItems_(data.entryItems);
+    if (e2) setConfig_('entryItems', e2);
+    return jsonOut_({ ok: true, config: readConfig_() });
+  }
+
   if (data.action === 'chargeEntry') {
     const charge = chargeApply_(data);
     return jsonOut_({ ok: true, charge: charge });
@@ -175,7 +202,9 @@ function doPost(e) {
     c.code || '',
     c.title || '',
     c.expires || '',
-    c.used ? 'used' : ''
+    c.used ? 'used' : '',
+    String(data.wish || ''),
+    String(data.entry || '')
   ]);
   return jsonOut_({ ok: true, code: c.code || '' });
 }
@@ -270,7 +299,9 @@ function doGet(e) {
       title: String(r[10] || ''),
       expires: String(r[11] || ''),
       used: String(r[12]) === 'used'
-    } : null
+    } : null,
+    wish: String(r[13] || ''),
+    entry: String(r[14] || '')
   }));
   return jsonOut_({ responses: list, credit: readCredit_(), config: readConfig_(), charge: readCharge_() });
 }

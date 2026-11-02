@@ -100,7 +100,15 @@ try {
         <label class="opt"><input type="radio" name="atmosphere" value="とても不満">とても不満</label>
       </div>
       <div class="card">
-        <h2>Q6. 改善点や感想・KIKCAFEで興味があることなど、自由にご記入ください</h2>
+        <h2>Q5. KIKCAFEにあったら嬉しいもの（任意・いくつでも）</h2>
+        <div id="wishBox"></div>
+      </div>
+      <div class="card">
+        <h2>Q6. 初めて来たとき、入りにくさはありましたか（任意）</h2>
+        <div id="entryBox"></div>
+      </div>
+      <div class="card">
+        <h2>Q7. 改善点や感想・KIKCAFEで興味があることなど、自由にご記入ください</h2>
         <textarea name="comment" placeholder="ご自由にご記入ください"></textarea>
       </div>
       <button class="submit" type="submit" id="sendBtn">送信してクーポンを受け取る</button>
@@ -134,13 +142,27 @@ const INBOX_KEY = "survey_proto_inbox_v3";
    デモ動作では同じ端末内の設定を読む。読めなければ初期値のまま */
 let couponTitle = "次回ドリンク 200円引き";
 let couponDays = 30;
+const WISH_DEFAULTS = ["甘いもの・ケーキ","ドリンクの種類","お食事メニュー","占い","イベント・講座","静かに過ごせる席","その他"];
+const ENTRY_DEFAULTS = ["特になかった","お店の場所が分かりにくかった","入口の様子で迷った","中が見えなくて様子が分からなかった","その他"];
+function renderChoices(){
+  const cfg = window._surveyCfg || {};
+  const wish = (Array.isArray(cfg.wishItems) && cfg.wishItems.length) ? cfg.wishItems : WISH_DEFAULTS;
+  const entry = (Array.isArray(cfg.entryItems) && cfg.entryItems.length) ? cfg.entryItems : ENTRY_DEFAULTS;
+  document.getElementById("wishBox").innerHTML = wish.map(w =>
+    '<label class="opt"><input type="checkbox" name="wish" value="' + w.replace(/"/g, "&quot;") + '">' + w.replace(/</g, "&lt;") + '</label>').join("");
+  document.getElementById("entryBox").innerHTML = entry.map(w =>
+    '<label class="opt"><input type="radio" name="entry" value="' + w.replace(/"/g, "&quot;") + '">' + w.replace(/</g, "&lt;") + '</label>').join("");
+}
 const CONFIG_KEY = "survey_proto_config_v1";
 function applyConfig(cfg){
   if (!cfg) return;
+  window._surveyCfg = cfg;
   if (cfg.couponTitle) couponTitle = String(cfg.couponTitle);
   if (Number(cfg.couponDays)) couponDays = Number(cfg.couponDays);
   document.getElementById("couponTitleText").textContent = couponTitle + "クーポン";
+  renderChoices();
 }
+renderChoices();
 if (GAS_URL) {
   fetch(GAS_URL + "?mode=config").then(r => r.json()).then(j => {
     if (j && j.config) applyConfig(j.config);
@@ -186,6 +208,8 @@ document.getElementById("survey").addEventListener("submit", async (ev) => {
     source: fd.get("source") || "",
     sourceNote: (fd.get("sourceNote") || "").trim(),
     atmosphere: fd.get("atmosphere") || "",
+    wish: fd.getAll("wish").join("、"),
+    entry: fd.get("entry") || "",
     comment: (fd.get("comment") || "").trim(),
     coupon: { code: code, title: couponTitle, expires: fmtDate(exp), used: false }
   };

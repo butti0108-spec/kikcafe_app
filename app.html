@@ -126,7 +126,7 @@ try {
     <button type="button" data-tab="agg">集計</button>
     <button type="button" data-tab="cal">カレンダー</button>
     <button type="button" data-tab="coupon">クーポン</button>
-    <button type="button" data-tab="charge">チャージ</button>
+    <button type="button" data-tab="charge">キッカペイ</button>
     <button type="button" data-tab="credit" class="special">★ 現物払い</button>
   </div>
 
@@ -161,12 +161,16 @@ try {
   <div class="agg" id="aggCompanion"><p class="empty">まだ回答はありません</p></div>
   <h2>集計：年代</h2>
   <div class="agg" id="aggAge"><p class="empty">まだ回答はありません</p></div>
+  <h2>集計：あったら嬉しいもの</h2>
+  <div class="agg" id="aggWish"><p class="empty">まだ回答はありません</p></div>
+  <h2>集計：入りにくさ</h2>
+  <div class="agg" id="aggEntry"><p class="empty">まだ回答はありません</p></div>
 
   </div>
 
   <div class="tabpage" id="page-cal">
   <h2>日付から見る</h2>
-  <p class="note">日付を押すと、その日の回答とチャージの記録が見られます。マスの中の数字は、その日の回答の件数です。</p>
+  <p class="note">日付を押すと、その日の回答とキッカペイの記録が見られます。マスの中の数字は、その日の回答の件数です。</p>
   <div class="item">
     <div class="bar" style="justify-content:space-between;">
       <button id="calPrev" type="button" style="padding:10px 16px;font-size:1rem;background:#fff;border:1px solid var(--accent);color:var(--accent);border-radius:8px;cursor:pointer;">← 前の月</button>
@@ -194,6 +198,18 @@ try {
     </div>
   </div>
 
+  <h2>アンケートの選択肢の設定</h2>
+  <p class="note">お客様アンケートの「あったら嬉しいもの」と「入りにくさ」の選択肢です。1行に1つずつ書いて保存すると、次に開かれたアンケートから変わります</p>
+  <div class="item">
+    <p class="note">あったら嬉しいもの（複数選べます）</p>
+    <textarea id="wishItemsInput" rows="7" style="width:100%;font-size:1rem;padding:10px;border:1px solid var(--line);border-radius:8px;"></textarea>
+    <p class="note">入りにくさ（1つ選ぶ）</p>
+    <textarea id="entryItemsInput" rows="5" style="width:100%;font-size:1rem;padding:10px;border:1px solid var(--line);border-radius:8px;"></textarea>
+    <div class="bar">
+      <button id="surveyConfigBtn" type="button" style="padding:10px 16px;font-size:1rem;background:#fff;border:1px solid var(--accent);color:var(--accent);border-radius:8px;cursor:pointer;">選択肢を保存する</button>
+    </div>
+  </div>
+
   <h2>クーポン管理</h2>
   <input class="search" id="couponSearch" type="text" placeholder="クーポン番号で検索（例：KF-）">
   <div id="coupons"></div>
@@ -202,7 +218,7 @@ try {
 
   <div class="tabpage" id="page-charge">
   <p class="lead">お客様のお金です。お客様から預かった分（入金）と、お会計で残高から払った分（利用）を記録します。残高と履歴は、その場でお客様にお見せできます。</p>
-  <h2>チャージ（お預かり残高）</h2>
+  <h2>キッカペイ（お預かり残高）</h2>
   <div class="item">
     <div id="chargeAccounts"></div>
     <div class="bar" style="margin-top:10px;">
@@ -277,7 +293,9 @@ let serverConfig = null; /* 本番（GAS）時はシート側のクーポン設�
 
 /* ===== クーポンの設定（内容・有効期限） ===== */
 const CONFIG_KEY = "survey_proto_config_v1";
-const CONFIG_DEFAULTS = { couponTitle: "次回ドリンク 200円引き", couponDays: 30 };
+const CONFIG_DEFAULTS = { couponTitle: "次回ドリンク 200円引き", couponDays: 30,
+  wishItems: ["甘いもの・ケーキ","ドリンクの種類","お食事メニュー","占い","イベント・講座","静かに過ごせる席","その他"],
+  entryItems: ["特になかった","お店の場所が分かりにくかった","入口の様子で迷った","中が見えなくて様子が分からなかった","その他"] };
 function loadConfig(){
   try { return Object.assign({}, CONFIG_DEFAULTS, JSON.parse(localStorage.getItem(CONFIG_KEY) || "{}")); }
   catch(e){ return Object.assign({}, CONFIG_DEFAULTS); }
@@ -289,6 +307,10 @@ function renderConfig(){
   const d = document.getElementById("couponDaysInput");
   if (document.activeElement !== t) t.value = cfg.couponTitle || "";
   if (document.activeElement !== d) d.value = cfg.couponDays || 30;
+  const w = document.getElementById("wishItemsInput");
+  const e = document.getElementById("entryItemsInput");
+  if (w && document.activeElement !== w) w.value = (cfg.wishItems || []).join("\n");
+  if (e && document.activeElement !== e) e.value = (cfg.entryItems || []).join("\n");
 }
 
 async function fetchAll(){
@@ -325,6 +347,19 @@ function aggHtml(rows, key){
   ).join("");
 }
 
+function aggWishHtml(rows){
+  const counts = {};
+  rows.forEach(r => { String(r.wish || "").split("、").forEach(w => { const v = w.trim(); if (v) counts[v] = (counts[v] || 0) + 1; }); });
+  const entries = Object.entries(counts).sort((a,b) => b[1] - a[1]);
+  if (!entries.length) return '<p class="empty">まだ回答はありません</p>';
+  const max = entries[0][1];
+  return entries.map(([name, cnt]) =>
+    '<div class="row"><div class="name">' + esc(name) + '</div>' +
+    '<div class="track"><div class="fill" style="width:' + Math.round(cnt / max * 100) + '%"></div></div>' +
+    '<div class="cnt">' + cnt + '件</div></div>'
+  ).join("");
+}
+
 function render(){
   const rows = loadStore().slice().sort((a,b) => (b.ts||"").localeCompare(a.ts||""));
   document.getElementById("totalCount").textContent = rows.length;
@@ -334,6 +369,8 @@ function render(){
   document.getElementById("aggSource").innerHTML = aggHtml(rows, "source");
   document.getElementById("aggCompanion").innerHTML = aggHtml(rows, "companion");
   document.getElementById("aggAge").innerHTML = aggHtml(rows, "age");
+  document.getElementById("aggWish").innerHTML = aggWishHtml(rows);
+  document.getElementById("aggEntry").innerHTML = aggHtml(rows, "entry");
 
   const q = (document.getElementById("couponSearch").value || "").trim().toUpperCase();
   const withCoupon = rows.filter(r => r.coupon && r.coupon.code);
@@ -354,7 +391,7 @@ function render(){
   const listNoteEl = document.getElementById("listFilterNote");
   if (!rows.length){ listEl.innerHTML = '<p class="empty">まだ回答はありません</p>'; listNoteEl.textContent = ""; return; }
   const lq = listQuery.trim().toLowerCase();
-  const shownRows = lq ? rows.filter(r => [r.age, r.gender, r.companion, r.source, r.sourceNote, r.atmosphere, r.comment, r.coupon ? r.coupon.code : ""].join(" ").toLowerCase().includes(lq)) : rows;
+  const shownRows = lq ? rows.filter(r => [r.age, r.gender, r.companion, r.source, r.sourceNote, r.atmosphere, r.wish, r.entry, r.comment, r.coupon ? r.coupon.code : ""].join(" ").toLowerCase().includes(lq)) : rows;
   listNoteEl.textContent = lq ? ("「" + listQuery.trim() + "」を含む回答：" + shownRows.length + "件") : "";
   if (!shownRows.length){ listEl.innerHTML = '<p class="empty">その言葉を含む回答はありません</p>'; return; }
   listEl.innerHTML = shownRows.map(r => {
@@ -367,6 +404,8 @@ function render(){
       (who ? '<dt>性別・年齢</dt><dd>' + esc(who) + '</dd>' : '') +
       (r.companion ? '<dt>誰と一緒に</dt><dd>' + esc(r.companion) + '</dd>' : '') +
       (r.atmosphere ? '<dt>お店の雰囲気</dt><dd>' + esc(r.atmosphere) + '</dd>' : '') +
+      (r.wish ? '<dt>あったら嬉しいもの</dt><dd>' + esc(r.wish) + '</dd>' : '') +
+      (r.entry ? '<dt>入りにくさ</dt><dd>' + esc(r.entry) + '</dd>' : '') +
       (r.comment ? '<dt>改善点・感想・興味のあること</dt><dd>' + esc(r.comment) + '</dd>' : '') +
       (r.coupon ? '<dt>発行クーポン</dt><dd>' + esc(r.coupon.code) + '（' + (r.coupon.used ? "使用済み" : "未使用") + '）</dd>' : '') +
       '</dl></div>';
@@ -445,11 +484,11 @@ document.getElementById("couponSearch").addEventListener("input", render);
 document.getElementById("listSearch").addEventListener("input", (e) => { listQuery = e.target.value; render(); });
 document.getElementById("csvBtn").addEventListener("click", () => {
   const rows = loadStore().slice().sort((a,b) => (a.ts||"").localeCompare(b.ts||""));
-  const head = ["日時","年代","性別","誰と一緒に","ご来店のきっかけ","きっかけ（紹介者・その他）","お店の雰囲気","改善点・感想・興味のあること","クーポン番号","クーポン状態"];
+  const head = ["日時","年代","性別","誰と一緒に","ご来店のきっかけ","きっかけ（紹介者・その他）","お店の雰囲気","あったら嬉しいもの","入りにくさ","改善点・感想・興味のあること","クーポン番号","クーポン状態"];
   const e = v => '"' + String(v == null ? "" : v).replace(/"/g,'""') + '"';
   const lines = [head.map(e).join(",")].concat(rows.map(r => [
     fmtDate(r.ts), r.age || "", r.gender || "", r.companion || "", r.source || "", r.sourceNote || "",
-    r.atmosphere || "", r.comment || "",
+    r.atmosphere || "", r.wish || "", r.entry || "", r.comment || "",
     r.coupon ? r.coupon.code : "", r.coupon ? (r.coupon.used ? "使用済み" : "未使用") : ""
   ].map(e).join(",")));
   const blob = new Blob(["\uFEFF" + lines.join("\r\n")], { type: "text/csv" });
@@ -561,7 +600,7 @@ document.getElementById("couponConfigBtn").addEventListener("click", async () =>
   if (!title){ statusEl.textContent = "クーポンの内容を入力してください"; return; }
   if (!(days >= 1 && days <= 730)){ statusEl.textContent = "有効期限は1日から730日の間で設定してください"; return; }
   if (demoMode) {
-    serverConfig = { couponTitle: title, couponDays: days };
+    serverConfig = Object.assign({}, currentConfig(), { couponTitle: title, couponDays: days });
   } else if (GAS_URL) {
     const json = await postAction({ action: "configCoupon", title: title, days: days });
     if (json && json.config) serverConfig = json.config;
@@ -569,6 +608,21 @@ document.getElementById("couponConfigBtn").addEventListener("click", async () =>
     localStorage.setItem(CONFIG_KEY, JSON.stringify({ couponTitle: title, couponDays: days }));
   }
   statusEl.textContent = "クーポンの設定を保存しました（内容：" + title + "／期限：発行から" + days + "日）。次に発行されるクーポンから使われます";
+  renderConfig();
+});
+document.getElementById("surveyConfigBtn").addEventListener("click", async () => {
+  const wishItems = document.getElementById("wishItemsInput").value.split("\n").map(x => x.trim()).filter(Boolean);
+  const entryItems = document.getElementById("entryItemsInput").value.split("\n").map(x => x.trim()).filter(Boolean);
+  if (!wishItems.length || !entryItems.length){ statusEl.textContent = "選択肢は、それぞれ1つ以上入れてください"; return; }
+  if (demoMode) {
+    serverConfig = Object.assign({}, currentConfig(), { wishItems: wishItems, entryItems: entryItems });
+  } else if (GAS_URL) {
+    const json = await postAction({ action: "configSurvey", wishItems: wishItems, entryItems: entryItems });
+    if (json && json.config) serverConfig = json.config;
+  } else {
+    localStorage.setItem(CONFIG_KEY, JSON.stringify(Object.assign({}, loadConfig(), { wishItems: wishItems, entryItems: entryItems })));
+  }
+  statusEl.textContent = "アンケートの選択肢を保存しました。次に開かれたアンケートから変わります";
   renderConfig();
 });
 
@@ -580,15 +634,15 @@ let demoCredit = null;
 let demoCharge = null;
 
 const SAMPLE_ROWS = [
-  { id:"sample1", ts:"2026-10-20T03:00:00.000Z", age:"60代以上", gender:"女性", companion:"1人", source:"通りがかり", sourceNote:"", atmosphere:"とても満足", comment:"静かで落ち着きます", coupon:{ code:"KF-D3K8Q2", title:"次回ドリンク 200円引き", expires:"2026/11/19", used:true } },
+  { id:"sample1", ts:"2026-10-20T03:00:00.000Z", age:"60代以上", gender:"女性", companion:"1人", source:"通りがかり", sourceNote:"", atmosphere:"とても満足", wish:"静かに過ごせる席", entry:"特になかった", comment:"静かで落ち着きます", coupon:{ code:"KF-D3K8Q2", title:"次回ドリンク 200円引き", expires:"2026/11/19", used:true } },
   { id:"sample2", ts:"2026-10-21T03:00:00.000Z", age:"40代", gender:"男性", companion:"仕事仲間", source:"紹介", sourceNote:"田中さんの紹介", atmosphere:"やや満足", comment:"Wi-Fiがあると助かります", coupon:{ code:"KF-M7P2X9", title:"次回ドリンク 200円引き", expires:"2026/10/31", used:false } },
   { id:"sample3", ts:"2026-10-23T03:00:00.000Z", age:"30代", gender:"女性", companion:"友人", source:"ChatGPT", sourceNote:"", atmosphere:"とても満足", comment:"ChatGPTにおすすめされて来ました", coupon:{ code:"KF-Q4N6B8", title:"次回ドリンク 200円引き", expires:"2026/11/22", used:false } },
-  { id:"sample4", ts:"2026-10-24T03:00:00.000Z", age:"20代", gender:"女性", companion:"1人", source:"SNS", sourceNote:"", atmosphere:"とても満足", comment:"写真で見たケーキが気になって来ました", coupon:{ code:"KF-T9W3E5", title:"次回ドリンク 200円引き", expires:"2026/11/23", used:true } },
-  { id:"sample5", ts:"2026-10-25T03:00:00.000Z", age:"50代", gender:"男性", companion:"家族", source:"ホームページ", sourceNote:"", atmosphere:"普通", comment:"駐車場の場所が少し分かりにくかったです", coupon:{ code:"KF-H2J7K4", title:"次回ドリンク 200円引き", expires:"2026/11/24", used:false } },
-  { id:"sample6", ts:"2026-10-27T03:00:00.000Z", age:"40代", gender:"女性", companion:"友人", source:"紹介", sourceNote:"常連の佐藤さんの紹介", atmosphere:"とても満足", comment:"占いのある日に来てみたいです", coupon:{ code:"KF-S8D5F6", title:"次回ドリンク 200円引き", expires:"2026/11/26", used:false } },
-  { id:"sample7", ts:"2026-10-28T03:00:00.000Z", age:"30代", gender:"男性", companion:"1人", source:"グルメ情報サイト", sourceNote:"", atmosphere:"やや満足", comment:"ランチの種類が増えると嬉しいです", coupon:{ code:"KF-G6H9J2", title:"次回ドリンク 200円引き", expires:"2026/11/27", used:false } },
+  { id:"sample4", ts:"2026-10-24T03:00:00.000Z", age:"20代", gender:"女性", companion:"1人", source:"SNS", sourceNote:"", atmosphere:"とても満足", wish:"甘いもの・ケーキ", entry:"特になかった", comment:"写真で見たケーキが気になって来ました", coupon:{ code:"KF-T9W3E5", title:"次回ドリンク 200円引き", expires:"2026/11/23", used:true } },
+  { id:"sample5", ts:"2026-10-25T03:00:00.000Z", age:"50代", gender:"男性", companion:"家族", source:"ホームページ", sourceNote:"", atmosphere:"普通", wish:"お食事メニュー", entry:"お店の場所が分かりにくかった", comment:"駐車場の場所が少し分かりにくかったです", coupon:{ code:"KF-H2J7K4", title:"次回ドリンク 200円引き", expires:"2026/11/24", used:false } },
+  { id:"sample6", ts:"2026-10-27T03:00:00.000Z", age:"40代", gender:"女性", companion:"友人", source:"紹介", sourceNote:"常連の佐藤さんの紹介", atmosphere:"とても満足", wish:"占い、イベント・講座", entry:"特になかった", comment:"占いのある日に来てみたいです", coupon:{ code:"KF-S8D5F6", title:"次回ドリンク 200円引き", expires:"2026/11/26", used:false } },
+  { id:"sample7", ts:"2026-10-28T03:00:00.000Z", age:"30代", gender:"男性", companion:"1人", source:"グルメ情報サイト", sourceNote:"", atmosphere:"やや満足", wish:"お食事メニュー", entry:"特になかった", comment:"ランチの種類が増えると嬉しいです", coupon:{ code:"KF-G6H9J2", title:"次回ドリンク 200円引き", expires:"2026/11/27", used:false } },
   { id:"sample8", ts:"2026-10-29T03:00:00.000Z", age:"60代以上", gender:"女性", companion:"友人", source:"ブログ", sourceNote:"", atmosphere:"とても満足", comment:"手作りの雰囲気が好きです", coupon:{ code:"KF-K3L7M9", title:"次回ドリンク 200円引き", expires:"2026/11/28", used:true } },
-  { id:"sample9", ts:"2026-10-30T03:00:00.000Z", age:"20代", gender:"男性", companion:"1人", source:"グーグル", sourceNote:"", atmosphere:"やや不満", comment:"入口が少し分かりにくかったです", coupon:{ code:"KF-N5P8Q3", title:"次回ドリンク 200円引き", expires:"2026/11/29", used:false } },
+  { id:"sample9", ts:"2026-10-30T03:00:00.000Z", age:"20代", gender:"男性", companion:"1人", source:"グーグル", sourceNote:"", atmosphere:"やや不満", wish:"ドリンクの種類", entry:"入口の様子で迷った", comment:"入口が少し分かりにくかったです", coupon:{ code:"KF-N5P8Q3", title:"次回ドリンク 200円引き", expires:"2026/11/29", used:false } },
   { id:"sample10", ts:"2026-10-31T03:00:00.000Z", age:"50代", gender:"女性", companion:"家族", source:"通りがかり", sourceNote:"", atmosphere:"やや満足", comment:"季節のスイーツを楽しみにしています", coupon:{ code:"KF-W2E4R6", title:"次回ドリンク 200円引き", expires:"2026/11/30", used:false } },
   { id:"sample11", ts:"2026-11-01T03:00:00.000Z", age:"30代", gender:"女性", companion:"仕事仲間", source:"紹介", sourceNote:"職場の同僚の紹介", atmosphere:"とても満足", comment:"マッサージの帰りに寄りました", coupon:{ code:"KF-Y7U9I2", title:"次回ドリンク 200円引き", expires:"2026/12/01", used:false } },
   { id:"sample12", ts:"2026-11-02T03:00:00.000Z", age:"40代", gender:"女性", companion:"1人", source:"ホームページ", sourceNote:"", atmosphere:"とても満足", comment:"新メニューの案内をSNSで見たいです", coupon:{ code:"KF-O4P6A8", title:"次回ドリンク 200円引き", expires:"2026/12/02", used:false } }
@@ -697,7 +751,7 @@ function renderCharge(){
     return { e: e, balAfter: bal[e.accountId] };
   });
   const label = { open: "登録", in: "入金", out: "利用" };
-  hist.innerHTML = '<h3 style="font-size:1rem;margin:10px 0 6px;">チャージの履歴</h3>' + rows.slice().reverse().map(x =>
+  hist.innerHTML = '<h3 style="font-size:1rem;margin:10px 0 6px;">キッカペイの履歴</h3>' + rows.slice().reverse().map(x =>
     '<div class="coupon"><div><div class="code">' + esc(x.e.name) + '　' + (label[x.e.kind] || x.e.kind) + (x.e.amount ? '　' + yen(x.e.amount) : '') + '</div>' +
     '<div class="meta">' + fmtDate(x.e.ts) + (x.e.memo ? '／' + esc(x.e.memo) : '') + '／残高 ' + yen(x.balAfter) + '</div></div>' +
     '<button type="button" data-undo="' + esc(x.e.entryId) + '" class="undo">取り消す</button></div>').join("");
@@ -770,7 +824,7 @@ async function chargeMove(kind, accountId){
 async function chargeUndo(entryId){
   if (demoMode) {
     demoCharge.entries = demoCharge.entries.filter(e => e.entryId !== entryId);
-    statusEl.textContent = "チャージの記録を1件取り消しました（お試しモード中は保存されません）";
+    statusEl.textContent = "キッカペイの記録を1件取り消しました（お試しモード中は保存されません）";
     renderCharge();
     return;
   }
@@ -782,7 +836,7 @@ async function chargeUndo(entryId){
     c.entries = c.entries.filter(e => e.entryId !== entryId);
     saveChargeLocal(c);
   }
-  statusEl.textContent = "チャージの記録を1件取り消しました";
+  statusEl.textContent = "キッカペイの記録を1件取り消しました";
   renderCharge();
 }
 
@@ -858,13 +912,15 @@ function renderCalendar(){
       (who ? '<dt>性別・年齢</dt><dd>' + esc(who) + '</dd>' : '') +
       (r.companion ? '<dt>誰と一緒に</dt><dd>' + esc(r.companion) + '</dd>' : '') +
       (r.atmosphere ? '<dt>お店の雰囲気</dt><dd>' + esc(r.atmosphere) + '</dd>' : '') +
+      (r.wish ? '<dt>あったら嬉しいもの</dt><dd>' + esc(r.wish) + '</dd>' : '') +
+      (r.entry ? '<dt>入りにくさ</dt><dd>' + esc(r.entry) + '</dd>' : '') +
       (r.comment ? '<dt>改善点・感想・興味のあること</dt><dd>' + esc(r.comment) + '</dd>' : '') +
       (r.coupon ? '<dt>発行クーポン</dt><dd>' + esc(r.coupon.code) + '（' + (r.coupon.used ? "使用済み" : "未使用") + '）</dd>' : '') +
       '</dl></div>';
   });
   const kindLabel = { open: "登録", in: "入金", out: "利用" };
   sel.charge.forEach(e => {
-    html += '<div class="coupon"><div><div class="code">' + esc(e.name) + '　チャージ' + (kindLabel[e.kind] || e.kind) + (e.amount ? '　' + yen(e.amount) : '') + '</div>' +
+    html += '<div class="coupon"><div><div class="code">' + esc(e.name) + '　キッカペイ' + (kindLabel[e.kind] || e.kind) + (e.amount ? '　' + yen(e.amount) : '') + '</div>' +
       '<div class="meta">' + fmtDate(e.ts) + (e.memo ? '／' + esc(e.memo) : '') + '</div></div></div>';
   });
   detail.innerHTML = html;
@@ -890,6 +946,22 @@ function aggTable(rows, key, total){
     }).join("") + '</table>';
 }
 
+function aggWishTable(rows, total){
+  const counts = {};
+  rows.forEach(r => { String(r.wish || "").split("、").forEach(w => { const v = w.trim(); if (v) counts[v] = (counts[v] || 0) + 1; }); });
+  const entries = Object.entries(counts).sort((a,b) => b[1] - a[1]);
+  if (!entries.length) return '<p>回答なし</p>';
+  const max = entries[0][1];
+  return '<table><tr><th>項目</th><th style="width:40%">グラフ</th><th style="width:6em">件数</th><th style="width:6em">割合</th></tr>' +
+    entries.map(([name, cnt]) => {
+      const w = Math.max(1, Math.round(cnt / max * 100));
+      const bar = '<svg width="100%" height="12" viewBox="0 0 100 12" preserveAspectRatio="none">' +
+        '<rect x="0" y="1" width="' + w + '" height="10" fill="#1d4e89"></rect></svg>';
+      return '<tr><td>' + esc(name) + '</td><td>' + bar + '</td><td class="num">' + cnt + '件</td><td class="num">' +
+        (total ? Math.round(cnt / total * 100) : 0) + '%</td></tr>';
+    }).join("") + '</table>';
+}
+
 function buildPrint(){
   const rows = loadStore().slice().sort((a,b) => (a.ts||"").localeCompare(b.ts||""));
   const total = rows.length;
@@ -902,7 +974,7 @@ function buildPrint(){
     const who = [r.age, r.gender].filter(Boolean).join("・");
     const source = (r.source || "") + (r.sourceNote ? "（" + r.sourceNote + "）" : "");
     return '<tr><td>' + fmtDate(r.ts) + '</td><td>' + esc(who) + '</td><td>' + esc(r.companion || "") +
-      '</td><td>' + esc(source) + '</td><td>' + esc(r.atmosphere || "") + '</td><td>' + esc(r.comment || "") +
+      '</td><td>' + esc(source) + '</td><td>' + esc(r.atmosphere || "") + '</td><td>' + esc(r.wish || "") + '</td><td>' + esc(r.entry || "") + '</td><td>' + esc(r.comment || "") +
       '</td><td>' + (r.coupon ? esc(r.coupon.code) + "<br>" + (r.coupon.used ? "使用済み" : "未使用") : "") + '</td></tr>';
   }).join("");
   document.getElementById("printArea").innerHTML =
@@ -914,10 +986,12 @@ function buildPrint(){
     '<h2>集計：ご来店のきっかけ</h2>' + aggTable(rows, "source", total) +
     '<h2>集計：誰と一緒に</h2>' + aggTable(rows, "companion", total) +
     '<h2>集計：年代</h2>' + aggTable(rows, "age", total) +
+    '<h2>集計：あったら嬉しいもの</h2>' + aggWishTable(rows, total) +
+    '<h2>集計：入りにくさ</h2>' + aggTable(rows, "entry", total) +
     '<h2>モニター料金（現物払い）の残高 ― 増渕家</h2>' +
     '<p>残高 ' + yen(credit.total - creditUsed) + '（総額 ' + yen(credit.total) + '／使った合計 ' + yen(creditUsed) + '）</p>' +
     '<h2>回答の一覧</h2>' +
-    (total ? '<table><tr><th>日時</th><th>性別・年齢</th><th>誰と</th><th>きっかけ</th><th>雰囲気</th><th>改善点・感想など</th><th>クーポン</th></tr>' + listRows + '</table>' : '<p>回答なし</p>');
+    (total ? '<table><tr><th>日時</th><th>性別・年齢</th><th>誰と</th><th>きっかけ</th><th>雰囲気</th><th>嬉しいもの</th><th>入りにくさ</th><th>改善点・感想など</th><th>クーポン</th></tr>' + listRows + '</table>' : '<p>回答なし</p>');
 }
 document.getElementById("printBtn").addEventListener("click", () => { buildPrint(); window.print(); });
 window.addEventListener("beforeprint", buildPrint);
