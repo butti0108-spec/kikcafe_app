@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KIKCAFE アンケート管理</title>
+<style>
+  :root{ --ink:#22303c; --accent:#1d4e89; --bg:#f4f6f8; --card:#ffffff; --line:#d7dee5; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif; background:var(--bg); color:var(--ink); font-size:16px; line-height:1.7; }
+  .wrap{ max-width:760px; margin:0 auto; padding:20px 16px 40px; }
+  h1{ font-size:1.375rem; margin:8px 0 12px; }
+  h2{ font-size:1.125rem; margin:24px 0 10px; }
+  .bar{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:12px; }
+  #refreshBtn{ padding:12px 22px; font-size:1rem; font-weight:bold; color:#fff; background:var(--accent); border:none; border-radius:8px; cursor:pointer; }
+  #refreshBtn:disabled{ opacity:.5; }
+  #csvBtn{ padding:12px 18px; font-size:1rem; background:#fff; border:1px solid var(--accent); color:var(--accent); border-radius:8px; cursor:pointer; }
+  #status{ background:#e8eff7; border-radius:8px; padding:10px 14px; margin-bottom:16px; min-height:1.7em; }
+  .summary{ display:flex; gap:12px; flex-wrap:wrap; margin-bottom:8px; }
+  .sum{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px 18px; }
+  .sum .num{ font-size:1.5rem; font-weight:bold; }
+  .sum .lbl{ font-size:0.875rem; color:#5a6a76; }
+  .agg{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; }
+  .agg .row{ display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+  .agg .name{ width:9em; flex:none; }
+  .agg .track{ flex:1; background:#eef2f5; border-radius:4px; height:18px; }
+  .agg .fill{ background:var(--accent); height:18px; border-radius:4px; }
+  .agg .cnt{ width:3em; text-align:right; font-weight:bold; }
+  .item{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:12px; }
+  .item .date{ font-size:0.875rem; color:#5a6a76; }
+  .item .head{ font-weight:bold; font-size:1.125rem; }
+  .item dl{ margin:8px 0 0; }
+  .item dt{ font-size:0.875rem; color:#5a6a76; }
+  .item dd{ margin:0 0 6px; }
+  .coupon{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px 16px; margin-bottom:10px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  .coupon .code{ font-weight:bold; font-size:1.125rem; letter-spacing:1px; }
+  .coupon .meta{ font-size:0.875rem; color:#5a6a76; }
+  .coupon .state{ font-weight:bold; }
+  .coupon .state.used{ color:#5a6a76; }
+  .coupon button{ margin-left:auto; padding:10px 16px; font-size:1rem; border-radius:8px; cursor:pointer; border:1px solid var(--accent); background:var(--accent); color:#fff; }
+  .coupon button.undo{ background:#fff; color:var(--accent); }
+  .search{ width:100%; font-size:1rem; padding:10px; border:1px solid var(--line); border-radius:8px; margin-bottom:12px; }
+  .empty{ text-align:center; color:#5a6a76; padding:24px 0; }
+  .note{ font-size:0.875rem; color:#5a6a76; }
+  #printArea{ display:none; }
+  @media print{
+    .wrap{ display:none !important; }
+    #printArea{ display:block; font-size:12pt; line-height:1.6; color:#000; }
+    #printArea h1{ font-size:24pt; margin:0 0 6pt; }
+    #printArea h2{ font-size:15pt; margin:18pt 0 6pt; border-bottom:1pt solid #000; padding-bottom:2pt; }
+    #printArea .p-meta{ font-size:10pt; margin-bottom:10pt; }
+    #printArea table{ border-collapse:collapse; width:100%; margin-bottom:8pt; }
+    #printArea th, #printArea td{ border:0.5pt solid #666; padding:4pt 6pt; text-align:left; vertical-align:top; }
+    #printArea th{ background:#eee; }
+    #printArea .num{ text-align:right; }
+    #printArea .p-sum{ display:flex; gap:24pt; margin:8pt 0; }
+    #printArea .p-sum div span{ font-size:16pt; font-weight:bold; }
+    @page{ size:A4; margin:15mm; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>KIKCAFE アンケート管理</h1>
+  <div class="bar">
+    <button id="refreshBtn" type="button">更新（新しい回答を取り込む）</button>
+    <button id="csvBtn" type="button">CSVで書き出す</button>
+    <button id="printBtn" type="button" style="padding:12px 18px;font-size:1rem;background:#fff;border:1px solid var(--accent);color:var(--accent);border-radius:8px;cursor:pointer;">集計レポートを印刷</button>
+  </div>
+  <div id="status">読み込み中です</div>
+  <div class="summary">
+    <div class="sum"><div class="num" id="totalCount">0</div><div class="lbl">回答の総数</div></div>
+    <div class="sum"><div class="num" id="avgAtmo">―</div><div class="lbl">雰囲気の平均（5点満点）</div></div>
+    <div class="sum"><div class="num" id="couponUnused">0</div><div class="lbl">未使用のクーポン</div></div>
+  </div>
+
+  <h2>集計：ご来店のきっかけ</h2>
+  <div class="agg" id="aggSource"><p class="empty">まだ回答はありません</p></div>
+  <h2>集計：誰と一緒に</h2>
+  <div class="agg" id="aggCompanion"><p class="empty">まだ回答はありません</p></div>
+  <h2>集計：年代</h2>
+  <div class="agg" id="aggAge"><p class="empty">まだ回答はありません</p></div>
+
+  <h2>クーポン管理</h2>
+  <input class="search" id="couponSearch" type="text" placeholder="クーポン番号で検索（例：KF-）">
+  <div id="coupons"></div>
+
+  <h2>モニター料金（現物払い）の残高 ― 増渕家</h2>
+  <div class="item">
+    <div class="bar">
+      <div class="sum"><div class="num" id="creditBalance">―</div><div class="lbl">残高</div></div>
+      <div class="sum"><div class="num" id="creditTotal">―</div><div class="lbl">総額</div></div>
+      <div class="sum"><div class="num" id="creditUsed">―</div><div class="lbl">使った合計</div></div>
+    </div>
+    <div class="bar">
+      <input type="number" id="useAmount" min="1" step="1" placeholder="使った金額（円）" style="width:11em;font-size:1rem;padding:10px;border:1px solid var(--line);border-radius:8px;">
+      <input type="text" id="useMemo" placeholder="メモ（例：コーヒーとケーキ）" style="flex:1;min-width:10em;font-size:1rem;padding:10px;border:1px solid var(--line);border-radius:8px;">
+      <button id="useBtn" type="button" style="padding:12px 20px;font-size:1rem;font-weight:bold;color:#fff;background:var(--accent);border:none;border-radius:8px;cursor:pointer;">使った分を引く</button>
+    </div>
+    <div id="creditHistory"></div>
+    <div class="bar" style="margin-top:10px;">
+      <input type="number" id="creditTotalInput" min="0" step="100" style="width:11em;font-size:1rem;padding:10px;border:1px solid var(--line);border-radius:8px;">
+      <button id="creditTotalBtn" type="button" style="padding:10px 16px;font-size:1rem;background:#fff;border:1px solid var(--accent);color:var(--accent);border-radius:8px;cursor:pointer;">総額を設定する</button>
+    </div>
+    <p class="note">モニター料金の代わりに受けた、飲食で使える現物払い分の残高です。使ったときに、その場で引いて記録します。</p>
+  </div>
+
+  <h2>回答の一覧</h2>
+  <div id="list"></div>
+  <p class="note">この画面を開いたときと、「更新」を押したときに、新しい回答を取り込みます。取り込み済みの回答は、二重には入りません。</p>
+</div>
+<script>
+"use strict";
+/* ===== 設定 =====
+   GAS_URL が空のときはデモ動作（同じ端末・同じブラウザ内で form.html と受け渡し）。
+   本番では、Apps Script（Code.gs）を公開したURLをここに入れます。 */
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzx28cBPtdGpbPS9Lc9Aq26qsVDD1IptbI01nLfdY5iJFKmXpNHkgKOHMY00xYQQNE/exec";
+const INBOX_KEY = "survey_proto_inbox_v3";
+const STORE_KEY = "survey_proto_app_v3";
+const ATMO_SCORE = { "とても満足":5, "やや満足":4, "普通":3, "やや不満":2, "とても不満":1 };
+
+const statusEl = document.getElementById("status");
+const listEl = document.getElementById("list");
+const couponsEl = document.getElementById("coupons");
+
+function loadStore(){ try { return JSON.parse(localStorage.getItem(STORE_KEY) || "[]"); } catch(e){ return []; } }
+function saveStore(rows){ localStorage.setItem(STORE_KEY, JSON.stringify(rows)); }
+function esc(s){ return String(s == null ? "" : s).replace(/</g, "&lt;"); }
+function fmtDate(iso){
+  const d = new Date(iso);
+  if (isNaN(d)) return iso || "";
+  const p = n => String(n).padStart(2, "0");
+  return d.getFullYear() + "/" + p(d.getMonth()+1) + "/" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes());
+}
+
+let serverCredit = null; /* 本番（GAS）時はシート側の残高状態を持つ */
+
+async function fetchAll(){
+  if (GAS_URL) {
+    const res = await fetch(GAS_URL, { method: "GET" });
+    const data = await res.json();
+    return { responses: Array.isArray(data) ? data : (data.responses || []),
+             credit: Array.isArray(data) ? null : (data.credit || null) };
+  }
+  await new Promise(r => setTimeout(r, 400));
+  let inbox = [];
+  try { inbox = JSON.parse(localStorage.getItem(INBOX_KEY) || "[]"); } catch(e) {}
+  return { responses: inbox, credit: null };
+}
+
+async function postAction(obj){
+  const res = await fetch(GAS_URL, { method: "POST",
+    headers: { "Content-Type": "text/plain" }, body: JSON.stringify(obj) });
+  try { return await res.json(); } catch(e) { return null; }
+}
+
+function aggHtml(rows, key){
+  const counts = {};
+  rows.forEach(r => { if (r[key]) counts[r[key]] = (counts[r[key]] || 0) + 1; });
+  const entries = Object.entries(counts).sort((a,b) => b[1] - a[1]);
+  if (!entries.length) return '<p class="empty">まだ回答はありません</p>';
+  const max = entries[0][1];
+  return entries.map(([name, cnt]) =>
+    '<div class="row"><div class="name">' + esc(name) + '</div>' +
+    '<div class="track"><div class="fill" style="width:' + Math.round(cnt / max * 100) + '%"></div></div>' +
+    '<div class="cnt">' + cnt + '件</div></div>'
+  ).join("");
+}
+
+function render(){
+  const rows = loadStore().slice().sort((a,b) => (b.ts||"").localeCompare(a.ts||""));
+  document.getElementById("totalCount").textContent = rows.length;
+  const scored = rows.map(r => ATMO_SCORE[r.atmosphere]).filter(v => v);
+  document.getElementById("avgAtmo").textContent = scored.length ? (scored.reduce((a,b)=>a+b,0)/scored.length).toFixed(1) : "―";
+  document.getElementById("couponUnused").textContent = rows.filter(r => r.coupon && !r.coupon.used).length;
+  document.getElementById("aggSource").innerHTML = aggHtml(rows, "source");
+  document.getElementById("aggCompanion").innerHTML = aggHtml(rows, "companion");
+  document.getElementById("aggAge").innerHTML = aggHtml(rows, "age");
+
+  const q = (document.getElementById("couponSearch").value || "").trim().toUpperCase();
+  const withCoupon = rows.filter(r => r.coupon && r.coupon.code);
+  const shown = q ? withCoupon.filter(r => r.coupon.code.toUpperCase().includes(q)) : withCoupon;
+  couponsEl.innerHTML = shown.length ? shown.map(r => {
+    const c = r.coupon;
+    return '<div class="coupon"><div><div class="code">' + esc(c.code) + '</div>' +
+      '<div class="meta">' + esc(c.title || "") + '／発行：' + fmtDate(r.ts) + '／期限：' + esc(c.expires || "") + '</div></div>' +
+      '<div class="state' + (c.used ? " used" : "") + '">' + (c.used ? "使用済み" : "未使用") + '</div>' +
+      '<button type="button" data-code="' + esc(c.code) + '" class="' + (c.used ? "undo" : "use") + '">' +
+      (c.used ? "未使用に戻す" : "使用済みにする") + '</button></div>';
+  }).join("") : '<p class="empty">クーポンはありません</p>';
+  couponsEl.querySelectorAll("button").forEach(btn => {
+    btn.addEventListener("click", () => toggleCoupon(btn.getAttribute("data-code")));
+  });
+
+  if (!rows.length){ listEl.innerHTML = '<p class="empty">まだ回答はありません</p>'; return; }
+  listEl.innerHTML = rows.map(r => {
+    const who = [r.age, r.gender].filter(Boolean).join("・");
+    const source = (r.source || "") + (r.sourceNote ? "（" + r.sourceNote + "）" : "");
+    return '<div class="item">' +
+      '<div class="date">' + fmtDate(r.ts) + '</div>' +
+      '<div class="head">' + esc(source || "きっかけ未回答") + '</div>' +
+      '<dl>' +
+      (who ? '<dt>性別・年齢</dt><dd>' + esc(who) + '</dd>' : '') +
+      (r.companion ? '<dt>誰と一緒に</dt><dd>' + esc(r.companion) + '</dd>' : '') +
+      (r.atmosphere ? '<dt>お店の雰囲気</dt><dd>' + esc(r.atmosphere) + '</dd>' : '') +
+      (r.comment ? '<dt>改善点・感想・興味のあること</dt><dd>' + esc(r.comment) + '</dd>' : '') +
+      (r.coupon ? '<dt>発行クーポン</dt><dd>' + esc(r.coupon.code) + '（' + (r.coupon.used ? "使用済み" : "未使用") + '）</dd>' : '') +
+      '</dl></div>';
+  }).join("");
+}
+
+async function toggleCoupon(code){
+  const store = loadStore();
+  const row = store.find(r => r.coupon && r.coupon.code === code);
+  if (!row) return;
+  row.coupon.used = !row.coupon.used;
+  saveStore(store);
+  if (!GAS_URL) {
+    try {
+      const inbox = JSON.parse(localStorage.getItem(INBOX_KEY) || "[]");
+      const hit = inbox.find(r => r.coupon && r.coupon.code === code);
+      if (hit) { hit.coupon.used = row.coupon.used; localStorage.setItem(INBOX_KEY, JSON.stringify(inbox)); }
+    } catch(e) {}
+  } else {
+    try {
+      await fetch(GAS_URL, { method: "POST", mode: "no-cors",
+        headers: { "Content-Type": "text/plain" },
+        body: JSON.stringify({ action: "useCoupon", code: code, used: row.coupon.used }) });
+    } catch(e) {}
+  }
+  statusEl.textContent = "クーポン " + code + " を" + (row.coupon.used ? "使用済みにしました" : "未使用に戻しました");
+  render();
+}
+
+async function refresh(){
+  const btn = document.getElementById("refreshBtn");
+  btn.disabled = true;
+  statusEl.textContent = "新しい回答を確認しています";
+  try {
+    const all = await fetchAll();
+    const inbox = all.responses;
+    if (GAS_URL && all.credit) { serverCredit = all.credit; renderCredit(); }
+    const store = loadStore();
+    const byId = new Map(store.map(r => [r.id, r]));
+    let freshCount = 0;
+    (inbox || []).forEach(r => {
+      if (!r || !r.id) return;
+      if (!byId.has(r.id)) { store.push(r); byId.set(r.id, r); freshCount++; }
+      else if (r.coupon && byId.get(r.id).coupon) {
+        byId.get(r.id).coupon.used = !!r.coupon.used;
+      }
+    });
+    saveStore(store);
+    statusEl.textContent = freshCount ? freshCount + "件の新しい回答を取り込みました" : "新しい回答はありません";
+  } catch(e) {
+    statusEl.textContent = "読み込みに失敗しました。通信環境をご確認ください";
+  }
+  render();
+  btn.disabled = false;
+}
+
+document.getElementById("refreshBtn").addEventListener("click", refresh);
+document.getElementById("couponSearch").addEventListener("input", render);
+document.getElementById("csvBtn").addEventListener("click", () => {
+  const rows = loadStore().slice().sort((a,b) => (a.ts||"").localeCompare(b.ts||""));
+  const head = ["日時","年代","性別","誰と一緒に","ご来店のきっかけ","きっかけ（紹介者・その他）","お店の雰囲気","改善点・感想・興味のあること","クーポン番号","クーポン状態"];
+  const e = v => '"' + String(v == null ? "" : v).replace(/"/g,'""') + '"';
+  const lines = [head.map(e).join(",")].concat(rows.map(r => [
+    fmtDate(r.ts), r.age || "", r.gender || "", r.companion || "", r.source || "", r.sourceNote || "",
+    r.atmosphere || "", r.comment || "",
+    r.coupon ? r.coupon.code : "", r.coupon ? (r.coupon.used ? "使用済み" : "未使用") : ""
+  ].map(e).join(",")));
+  const blob = new Blob(["\uFEFF" + lines.join("\r\n")], { type: "text/csv" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "KIKCAFEアンケート回答.csv";
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+/* ===== モニター料金（現物払い）の残高 =====
+   試作品ではこの端末内に記録します。本番ではシート側に持たせて、
+   お店と増渕家のどちらからでも同じ残高が見える形にします。 */
+const CREDIT_KEY = "survey_proto_credit_v1";
+const CREDIT_DEFAULT_TOTAL = 15000;
+
+function loadCredit(){
+  try {
+    const c = JSON.parse(localStorage.getItem(CREDIT_KEY) || "null");
+    if (c && typeof c.total === "number" && Array.isArray(c.uses)) return c;
+  } catch(e) {}
+  return { total: CREDIT_DEFAULT_TOTAL, uses: [] };
+}
+function saveCredit(c){ localStorage.setItem(CREDIT_KEY, JSON.stringify(c)); }
+function yen(n){ return "¥" + Number(n).toLocaleString("ja-JP"); }
+
+function renderCredit(){
+  const c = (GAS_URL && serverCredit) ? serverCredit : loadCredit();
+  const used = c.uses.reduce((a,u) => a + (u.amount || 0), 0);
+  document.getElementById("creditBalance").textContent = yen(c.total - used);
+  document.getElementById("creditTotal").textContent = yen(c.total);
+  document.getElementById("creditUsed").textContent = yen(used);
+  document.getElementById("creditTotalInput").value = c.total;
+  const hist = document.getElementById("creditHistory");
+  if (!c.uses.length){ hist.innerHTML = '<p class="note">まだ利用の記録はありません</p>'; return; }
+  let bal = c.total;
+  const rows = c.uses.map((u, i) => {
+    bal -= (u.amount || 0);
+    const uid = u.useId || u.id || "";
+    return '<div class="coupon"><div><div class="code">' + yen(u.amount) + '</div>' +
+      '<div class="meta">' + fmtDate(u.ts) + (u.memo ? '／' + esc(u.memo) : '') + '／この時点で残高 ' + yen(bal) + '</div></div>' +
+      '<button type="button" data-idx="' + i + '" data-uid="' + esc(uid) + '" class="undo">取り消す</button></div>';
+  });
+  hist.innerHTML = rows.reverse().join("");
+  hist.querySelectorAll("button").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      if (GAS_URL) {
+        const json = await postAction({ action: "creditUndo", useId: btn.getAttribute("data-uid") });
+        if (json && json.credit) serverCredit = json.credit;
+        statusEl.textContent = "利用の記録を1件取り消しました";
+        renderCredit();
+        return;
+      }
+      const c2 = loadCredit();
+      c2.uses.splice(Number(btn.getAttribute("data-idx")), 1);
+      saveCredit(c2);
+      statusEl.textContent = "利用の記録を1件取り消しました";
+      renderCredit();
+    });
+  });
+}
+
+document.getElementById("useBtn").addEventListener("click", async () => {
+  const amount = Number(document.getElementById("useAmount").value);
+  const memo = document.getElementById("useMemo").value.trim();
+  if (!amount || amount <= 0){ statusEl.textContent = "使った金額を入れてください"; return; }
+  const useId = "u" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const ts = new Date().toISOString();
+  if (GAS_URL) {
+    const json = await postAction({ action: "creditUse", useId: useId, ts: ts, amount: amount, memo: memo });
+    if (json && json.credit) serverCredit = json.credit;
+  } else {
+    const c = loadCredit();
+    c.uses.push({ id: useId, ts: ts, amount: amount, memo: memo });
+    saveCredit(c);
+  }
+  document.getElementById("useAmount").value = "";
+  document.getElementById("useMemo").value = "";
+  statusEl.textContent = yen(amount) + " を引いて記録しました";
+  renderCredit();
+});
+document.getElementById("creditTotalBtn").addEventListener("click", async () => {
+  const v = Number(document.getElementById("creditTotalInput").value);
+  if (isNaN(v) || v < 0){ statusEl.textContent = "総額を確認してください"; return; }
+  if (GAS_URL) {
+    const json = await postAction({ action: "creditTotal", total: v });
+    if (json && json.credit) serverCredit = json.credit;
+  } else {
+    const c = loadCredit();
+    c.total = v;
+    saveCredit(c);
+  }
+  statusEl.textContent = "総額を " + yen(v) + " に設定しました";
+  renderCredit();
+});
+
+/* ===== 印刷（集計レポート） ===== */
+function aggTable(rows, key, total){
+  const counts = {};
+  rows.forEach(r => { if (r[key]) counts[r[key]] = (counts[r[key]] || 0) + 1; });
+  const entries = Object.entries(counts).sort((a,b) => b[1] - a[1]);
+  if (!entries.length) return '<p>回答なし</p>';
+  const max = entries[0][1];
+  /* グラフはSVGで描く（印刷の「背景グラフィック」設定に左右されず、確実に印刷されるため） */
+  return '<table><tr><th>項目</th><th style="width:40%">グラフ</th><th style="width:6em">件数</th><th style="width:6em">割合</th></tr>' +
+    entries.map(([name, cnt]) => {
+      const w = Math.max(1, Math.round(cnt / max * 100));
+      const bar = '<svg width="100%" height="12" viewBox="0 0 100 12" preserveAspectRatio="none">' +
+        '<rect x="0" y="1" width="' + w + '" height="10" fill="#1d4e89"></rect></svg>';
+      return '<tr><td>' + esc(name) + '</td><td>' + bar + '</td><td class="num">' + cnt + '件</td><td class="num">' +
+        (total ? Math.round(cnt / total * 100) : 0) + '%</td></tr>';
+    }).join("") + '</table>';
+}
+
+function buildPrint(){
+  const rows = loadStore().slice().sort((a,b) => (a.ts||"").localeCompare(b.ts||""));
+  const total = rows.length;
+  const scored = rows.map(r => ATMO_SCORE[r.atmosphere]).filter(v => v);
+  const avg = scored.length ? (scored.reduce((a,b)=>a+b,0)/scored.length).toFixed(1) : "―";
+  const unused = rows.filter(r => r.coupon && !r.coupon.used).length;
+  const credit = loadCredit();
+  const creditUsed = credit.uses.reduce((a,u) => a + (u.amount || 0), 0);
+  const listRows = rows.map(r => {
+    const who = [r.age, r.gender].filter(Boolean).join("・");
+    const source = (r.source || "") + (r.sourceNote ? "（" + r.sourceNote + "）" : "");
+    return '<tr><td>' + fmtDate(r.ts) + '</td><td>' + esc(who) + '</td><td>' + esc(r.companion || "") +
+      '</td><td>' + esc(source) + '</td><td>' + esc(r.atmosphere || "") + '</td><td>' + esc(r.comment || "") +
+      '</td><td>' + (r.coupon ? esc(r.coupon.code) + "<br>" + (r.coupon.used ? "使用済み" : "未使用") : "") + '</td></tr>';
+  }).join("");
+  document.getElementById("printArea").innerHTML =
+    '<h1>KIKCAFE アンケート集計レポート</h1>' +
+    '<div class="p-meta">出力日時：' + fmtDate(new Date().toISOString()) + '</div>' +
+    '<div class="p-sum"><div>回答の総数 <span>' + total + '件</span></div>' +
+    '<div>雰囲気の平均 <span>' + avg + '</span>（5点満点）</div>' +
+    '<div>未使用クーポン <span>' + unused + '枚</span></div></div>' +
+    '<h2>集計：ご来店のきっかけ</h2>' + aggTable(rows, "source", total) +
+    '<h2>集計：誰と一緒に</h2>' + aggTable(rows, "companion", total) +
+    '<h2>集計：年代</h2>' + aggTable(rows, "age", total) +
+    '<h2>モニター料金（現物払い）の残高 ― 増渕家</h2>' +
+    '<p>残高 ' + yen(credit.total - creditUsed) + '（総額 ' + yen(credit.total) + '／使った合計 ' + yen(creditUsed) + '）</p>' +
+    '<h2>回答の一覧</h2>' +
+    (total ? '<table><tr><th>日時</th><th>性別・年齢</th><th>誰と</th><th>きっかけ</th><th>雰囲気</th><th>改善点・感想など</th><th>クーポン</th></tr>' + listRows + '</table>' : '<p>回答なし</p>');
+}
+document.getElementById("printBtn").addEventListener("click", () => { buildPrint(); window.print(); });
+window.addEventListener("beforeprint", buildPrint);
+
+renderCredit();
+render();
+refresh(); /* 開いたときに自動で取り込む */
+</script>
+<div id="printArea"></div>
+</body>
+</html>

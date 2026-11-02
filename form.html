@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KIKCAFE お客様アンケート</title>
+<style>
+  :root{ --ink:#22303c; --accent:#1d4e89; --bg:#f4f6f8; --card:#ffffff; --line:#d7dee5; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif; background:var(--bg); color:var(--ink); font-size:16px; line-height:1.7; }
+  .wrap{ max-width:640px; margin:0 auto; padding:20px 16px 40px; }
+  h1{ font-size:1.5rem; margin:8px 0 4px; }
+  .lead{ margin:0 0 20px; }
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:18px; margin-bottom:16px; }
+  .card h2{ font-size:1.125rem; margin:0 0 10px; }
+  .sub{ font-weight:bold; margin:12px 0 6px; }
+  .sub:first-of-type{ margin-top:0; }
+  .req{ color:#b3261e; font-size:0.875rem; margin-left:6px; }
+  label.opt{ display:block; padding:10px 12px; border:1px solid var(--line); border-radius:8px; margin-bottom:8px; cursor:pointer; }
+  label.opt input{ margin-right:8px; transform:scale(1.2); }
+  input[type="text"], textarea{ width:100%; font-size:1rem; padding:10px; border:1px solid var(--line); border-radius:8px; background:#fff; }
+  textarea{ min-height:110px; }
+  .submit{ display:block; width:100%; padding:16px; font-size:1.125rem; font-weight:bold; color:#fff; background:var(--accent); border:none; border-radius:10px; cursor:pointer; }
+  .submit:disabled{ opacity:.5; }
+  .note{ font-size:0.875rem; color:#5a6a76; }
+  #done{ display:none; padding:24px 0; }
+  #done .big{ font-size:1.375rem; font-weight:bold; text-align:center; margin-bottom:8px; }
+  #done .thanks{ text-align:center; margin-bottom:20px; }
+  .coupon{ background:#fff8e6; border:2px dashed #c9a227; border-radius:12px; padding:20px; text-align:center; }
+  .coupon .c-title{ font-weight:bold; font-size:1.25rem; margin-bottom:4px; }
+  .coupon .c-code{ font-size:1.75rem; font-weight:bold; letter-spacing:2px; margin:10px 0; }
+  .coupon .c-exp{ font-size:0.875rem; color:#5a6a76; }
+  #err{ display:none; color:#b3261e; margin-top:10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="formArea">
+    <h1>アンケートにご協力お願いします</h1>
+    <p class="lead">KIKCAFEにご来店ありがとうございます。当てはまる項目をお選びください。ご回答いただいた方には、次回使えるクーポンをお渡ししています。</p>
+    <form id="survey">
+      <div class="card">
+        <h2>Q1. 性別・ご年齢</h2>
+        <p class="sub">ご年齢</p>
+        <label class="opt"><input type="radio" name="age" value="10代">10代</label>
+        <label class="opt"><input type="radio" name="age" value="20代">20代</label>
+        <label class="opt"><input type="radio" name="age" value="30代">30代</label>
+        <label class="opt"><input type="radio" name="age" value="40代">40代</label>
+        <label class="opt"><input type="radio" name="age" value="50代">50代</label>
+        <label class="opt"><input type="radio" name="age" value="60代以上">60代以上</label>
+        <p class="sub">性別</p>
+        <label class="opt"><input type="radio" name="gender" value="男性">男性</label>
+        <label class="opt"><input type="radio" name="gender" value="女性">女性</label>
+        <label class="opt"><input type="radio" name="gender" value="その他">その他</label>
+      </div>
+      <div class="card">
+        <h2>Q2. 誰と一緒に参加されましたか？</h2>
+        <label class="opt"><input type="radio" name="companion" value="1人">1人</label>
+        <label class="opt"><input type="radio" name="companion" value="仕事仲間">仕事仲間</label>
+        <label class="opt"><input type="radio" name="companion" value="友人">友人</label>
+        <label class="opt"><input type="radio" name="companion" value="家族">家族</label>
+        <label class="opt"><input type="radio" name="companion" value="その他">その他</label>
+      </div>
+      <div class="card">
+        <h2>Q3. ご来店のきっかけ</h2>
+        <label class="opt"><input type="radio" name="source" value="ホームページ">ホームページ</label>
+        <label class="opt"><input type="radio" name="source" value="SNS">SNS</label>
+        <label class="opt"><input type="radio" name="source" value="ブログ">ブログ</label>
+        <label class="opt"><input type="radio" name="source" value="紹介">紹介</label>
+        <label class="opt"><input type="radio" name="source" value="通りがかり">通りがかり</label>
+        <label class="opt"><input type="radio" name="source" value="グーグル">グーグル</label>
+        <label class="opt"><input type="radio" name="source" value="グルメ情報サイト">グルメ情報サイト</label>
+        <label class="opt"><input type="radio" name="source" value="その他">その他</label>
+        <input type="text" name="sourceNote" placeholder="紹介の場合はどなたの紹介か、その他の場合はその内容をお聞かせください">
+      </div>
+      <div class="card">
+        <h2>Q4. お店の雰囲気</h2>
+        <label class="opt"><input type="radio" name="atmosphere" value="とても満足">とても満足</label>
+        <label class="opt"><input type="radio" name="atmosphere" value="やや満足">やや満足</label>
+        <label class="opt"><input type="radio" name="atmosphere" value="普通">普通</label>
+        <label class="opt"><input type="radio" name="atmosphere" value="やや不満">やや不満</label>
+        <label class="opt"><input type="radio" name="atmosphere" value="とても不満">とても不満</label>
+      </div>
+      <div class="card">
+        <h2>Q6. 改善点や感想・KIKCAFEで興味があることなど、自由にご記入ください</h2>
+        <textarea name="comment" placeholder="ご自由にご記入ください"></textarea>
+      </div>
+      <button class="submit" type="submit" id="sendBtn">送信してクーポンを受け取る</button>
+      <div id="err">送信できませんでした。通信環境をご確認のうえ、もう一度お試しください。</div>
+      <p class="note">ご回答は、お店の改善のためにのみ使用いたします。</p>
+    </form>
+  </div>
+  <div id="done">
+    <p class="big">ご回答ありがとうございました</p>
+    <p class="thanks">クーポンを発行しました。次回のご来店時に、この画面をお見せください。</p>
+    <div class="coupon">
+      <div class="c-title">次回ドリンク 200円引きクーポン</div>
+      <div>クーポン番号</div>
+      <div class="c-code" id="couponCode">――――</div>
+      <div class="c-exp">有効期限：<span id="couponExp"></span></div>
+      <div class="c-exp">この画面のスクリーンショットを保存しておくと安心です</div>
+    </div>
+  </div>
+</div>
+<script>
+"use strict";
+/* ===== 設定 =====
+   GAS_URL が空のときはデモ動作（同じ端末・同じブラウザ内で app.html と受け渡し）。
+   本番では、Apps Script（Code.gs）を公開したURLをここに入れます。 */
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzx28cBPtdGpbPS9Lc9Aq26qsVDD1IptbI01nLfdY5iJFKmXpNHkgKOHMY00xYQQNE/exec";
+const INBOX_KEY = "survey_proto_inbox_v3";
+const COUPON_TITLE = "次回ドリンク 200円引き";
+const COUPON_DAYS = 30; /* 有効期限：発行から30日 */
+
+function makeCode(){
+  const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+  let s = "";
+  for (let i = 0; i < 6; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return "KF-" + s;
+}
+function fmtDate(d){
+  const p = n => String(n).padStart(2, "0");
+  return d.getFullYear() + "/" + p(d.getMonth()+1) + "/" + p(d.getDate());
+}
+
+document.getElementById("survey").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const btn = document.getElementById("sendBtn");
+  const err = document.getElementById("err");
+  btn.disabled = true; err.style.display = "none";
+  const fd = new FormData(ev.target);
+  const now = new Date();
+  const exp = new Date(now.getTime() + COUPON_DAYS * 24 * 60 * 60 * 1000);
+  let code = makeCode();
+  if (!GAS_URL) {
+    /* デモ動作：発行済みの番号と照合し、かぶったら振り直す（前に出た番号は出さない） */
+    try {
+      const inbox0 = JSON.parse(localStorage.getItem(INBOX_KEY) || "[]");
+      const usedCodes = new Set(inbox0.map(r => r.coupon && r.coupon.code).filter(Boolean));
+      while (usedCodes.has(code)) code = makeCode();
+    } catch(e) {}
+  }
+  const data = {
+    id: "r" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+    ts: now.toISOString(),
+    age: fd.get("age") || "",
+    gender: fd.get("gender") || "",
+    companion: fd.get("companion") || "",
+    source: fd.get("source") || "",
+    sourceNote: (fd.get("sourceNote") || "").trim(),
+    atmosphere: fd.get("atmosphere") || "",
+    comment: (fd.get("comment") || "").trim(),
+    coupon: { code: code, title: COUPON_TITLE, expires: fmtDate(exp), used: false }
+  };
+  try {
+    if (GAS_URL) {
+      /* 本番：サーバー側でも番号の重なりを照合し、最終の番号が返ってくる */
+      const res = await fetch(GAS_URL, { method: "POST",
+        headers: { "Content-Type": "text/plain" }, body: JSON.stringify(data) });
+      try {
+        const json = await res.json();
+        if (json && json.code) { code = json.code; data.coupon.code = code; }
+      } catch(e) { /* 返信が読めない場合は、送信した番号のまま表示する */ }
+    } else {
+      const inbox = JSON.parse(localStorage.getItem(INBOX_KEY) || "[]");
+      inbox.push(data);
+      localStorage.setItem(INBOX_KEY, JSON.stringify(inbox));
+    }
+    document.getElementById("couponCode").textContent = code;
+    document.getElementById("couponExp").textContent = fmtDate(exp);
+    document.getElementById("formArea").style.display = "none";
+    document.getElementById("done").style.display = "block";
+    window.scrollTo(0, 0);
+  } catch (e) {
+    err.style.display = "block";
+    btn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
