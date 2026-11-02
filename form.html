@@ -20,6 +20,9 @@
   label.opt input{ margin-right:8px; transform:scale(1.2); }
   input[type="text"], textarea{ width:100%; font-size:1rem; padding:10px; border:1px solid var(--line); border-radius:8px; background:var(--card); }
   textarea{ min-height:110px; }
+  .condwrap{ background:rgba(29,78,137,.10); border-left:4px solid #1d4e89; border-radius:8px; padding:10px; margin:-2px 0 10px; }
+  @keyframes condflash{ 0%{ background:rgba(29,78,137,.38); } 100%{ background:rgba(29,78,137,.10); } }
+  .condwrap.flash{ animation:condflash 1.2s ease-out; }
   .submit{ display:block; width:100%; padding:16px; font-size:1.125rem; font-weight:bold; color:#fff; background:var(--accent); border:none; border-radius:10px; cursor:pointer; }
   .submit:disabled{ opacity:.5; }
   .note{ font-size:0.875rem; color:var(--sub); }
@@ -79,6 +82,9 @@ try {
         <label class="opt"><input type="radio" name="companion" value="友人">友人</label>
         <label class="opt"><input type="radio" name="companion" value="家族">家族</label>
         <label class="opt"><input type="radio" name="companion" value="その他">その他</label>
+        <div id="companionOtherWrap" class="condwrap" style="display:none">
+          <input type="text" name="companionOther" id="companionOtherInput" placeholder="どなたと一緒か教えてください（任意）">
+        </div>
       </div>
       <div class="card">
         <h2>Q3. ご来店のきっかけ</h2>
@@ -86,13 +92,13 @@ try {
         <label class="opt"><input type="radio" name="source" value="SNS">SNS</label>
         <label class="opt"><input type="radio" name="source" value="ブログ">ブログ</label>
         <label class="opt"><input type="radio" name="source" value="紹介">紹介</label>
+        <div id="sourceNoteWrap" class="condwrap" style="display:none">
+          <input type="text" name="sourceNote" id="sourceNoteInput" placeholder="どなたの紹介か教えてください（任意）">
+        </div>
         <label class="opt"><input type="radio" name="source" value="通りがかり">通りがかり</label>
         <label class="opt"><input type="radio" name="source" value="グーグル">グーグル</label>
         <label class="opt"><input type="radio" name="source" value="グルメ情報サイト">グルメ情報サイト</label>
         <label class="opt"><input type="radio" name="source" value="その他">その他</label>
-        <div id="sourceNoteWrap" style="display:none">
-          <input type="text" name="sourceNote" id="sourceNoteInput" placeholder="どなたの紹介か教えてください（任意）">
-        </div>
       </div>
       <div class="card">
         <h2>Q4. お店の雰囲気</h2>
@@ -107,7 +113,7 @@ try {
       <div class="card">
         <h2>Q5. KIKCAFEにあったら嬉しいもの（任意・いくつでも）</h2>
         <div id="wishBox"></div>
-        <div id="wishOtherWrap" style="display:none">
+        <div id="wishOtherWrap" class="condwrap" style="display:none">
           <input type="text" name="wishOther" id="wishOtherInput" placeholder="「その他」の内容を教えてください（任意）">
         </div>
       </div>
@@ -155,15 +161,22 @@ let couponTitle = "次回ドリンク 200円引き";
 let couponDays = 30;
 const WISH_DEFAULTS = ["甘いもの・ケーキ","ドリンクの種類","お食事メニュー","占い","イベント・講座","静かに過ごせる席","その他"];
 const ENTRY_DEFAULTS = ["特になかった","お店の場所が分かりにくかった","入口の様子で迷った","中が見えなくて様子が分からなかった","その他"];
+function setWrap(id, show){
+  const el = document.getElementById(id);
+  const was = el.style.display !== "none";
+  el.style.display = show ? "" : "none";
+  if (show && !was){ el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); }
+}
 function syncConditionalFields(){
-  const src = (new FormData(document.getElementById("survey"))).get("source") || "";
-  const sw = document.getElementById("sourceNoteWrap");
+  const fd = new FormData(document.getElementById("survey"));
+  setWrap("companionOtherWrap", fd.get("companion") === "その他");
+  const src = fd.get("source") || "";
   const si = document.getElementById("sourceNoteInput");
-  if (src === "紹介"){ sw.style.display = ""; si.placeholder = "どなたの紹介か教えてください（任意）"; }
-  else if (src === "その他"){ sw.style.display = ""; si.placeholder = "よろしければ内容を教えてください（任意）"; }
-  else { sw.style.display = "none"; }
+  if (src === "紹介") si.placeholder = "どなたの紹介か教えてください（任意）";
+  else if (src === "その他") si.placeholder = "よろしければ内容を教えてください（任意）";
+  setWrap("sourceNoteWrap", src === "紹介" || src === "その他");
   const other = document.querySelector('input[name="wish"][value="その他"]');
-  document.getElementById("wishOtherWrap").style.display = (other && other.checked) ? "" : "none";
+  setWrap("wishOtherWrap", !!(other && other.checked));
 }
 document.getElementById("survey").addEventListener("change", syncConditionalFields);
 function renderChoices(){
@@ -229,6 +242,7 @@ document.getElementById("survey").addEventListener("submit", async (ev) => {
     age: fd.get("age") || "",
     gender: fd.get("gender") || "",
     companion: fd.get("companion") || "",
+    companionOther: (fd.get("companion") === "その他" ? (fd.get("companionOther") || "").trim() : ""),
     source: fd.get("source") || "",
     sourceNote: ((fd.get("source") === "紹介" || fd.get("source") === "その他") ? (fd.get("sourceNote") || "").trim() : ""),
     atmosphere: fd.get("atmosphere") || "",

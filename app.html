@@ -391,7 +391,7 @@ function render(){
   const listNoteEl = document.getElementById("listFilterNote");
   if (!rows.length){ listEl.innerHTML = '<p class="empty">まだ回答はありません</p>'; listNoteEl.textContent = ""; return; }
   const lq = listQuery.trim().toLowerCase();
-  const shownRows = lq ? rows.filter(r => [r.age, r.gender, r.companion, r.source, r.sourceNote, r.atmosphere, r.atmoReason, r.wish, r.wishOther, r.entry, r.entryNote, r.comment, r.coupon ? r.coupon.code : ""].join(" ").toLowerCase().includes(lq)) : rows;
+  const shownRows = lq ? rows.filter(r => [r.age, r.gender, r.companion, r.companionOther, r.source, r.sourceNote, r.atmosphere, r.atmoReason, r.wish, r.wishOther, r.entry, r.entryNote, r.comment, r.coupon ? r.coupon.code : ""].join(" ").toLowerCase().includes(lq)) : rows;
   listNoteEl.textContent = lq ? ("「" + listQuery.trim() + "」を含む回答：" + shownRows.length + "件") : "";
   if (!shownRows.length){ listEl.innerHTML = '<p class="empty">その言葉を含む回答はありません</p>'; return; }
   listEl.innerHTML = shownRows.map(r => {
@@ -402,7 +402,7 @@ function render(){
       '<div class="head">' + esc(source || "きっかけ未回答") + '</div>' +
       '<dl>' +
       (who ? '<dt>性別・年齢</dt><dd>' + esc(who) + '</dd>' : '') +
-      (r.companion ? '<dt>誰と一緒に</dt><dd>' + esc(r.companion) + '</dd>' : '') +
+      (r.companion ? '<dt>誰と一緒に</dt><dd>' + esc(r.companion) + (r.companionOther ? '（' + esc(r.companionOther) + '）' : '') + '</dd>' : '') +
       (r.atmosphere ? '<dt>お店の雰囲気</dt><dd>' + esc(r.atmosphere) + '</dd>' : '') +
       (r.atmoReason ? '<dt>雰囲気の理由</dt><dd>' + esc(r.atmoReason) + '</dd>' : '') +
       (r.wish ? '<dt>あったら嬉しいもの</dt><dd>' + esc(r.wish) + '</dd>' : '') +
@@ -487,10 +487,10 @@ document.getElementById("couponSearch").addEventListener("input", render);
 document.getElementById("listSearch").addEventListener("input", (e) => { listQuery = e.target.value; render(); });
 document.getElementById("csvBtn").addEventListener("click", () => {
   const rows = loadStore().slice().sort((a,b) => (a.ts||"").localeCompare(b.ts||""));
-  const head = ["日時","年代","性別","誰と一緒に","ご来店のきっかけ","きっかけ（紹介者・その他）","お店の雰囲気","雰囲気の理由","あったら嬉しいもの","その他の希望","入りにくさ","入りやすくするには","改善点・感想・興味のあること","クーポン番号","クーポン状態"];
+  const head = ["日時","年代","性別","誰と一緒に","同行者（その他）","ご来店のきっかけ","きっかけ（紹介者・その他）","お店の雰囲気","雰囲気の理由","あったら嬉しいもの","その他の希望","入りにくさ","入りやすくするには","改善点・感想・興味のあること","クーポン番号","クーポン状態"];
   const e = v => '"' + String(v == null ? "" : v).replace(/"/g,'""') + '"';
   const lines = [head.map(e).join(",")].concat(rows.map(r => [
-    fmtDate(r.ts), r.age || "", r.gender || "", r.companion || "", r.source || "", r.sourceNote || "",
+    fmtDate(r.ts), r.age || "", r.gender || "", r.companion || "", r.companionOther || "", r.source || "", r.sourceNote || "",
     r.atmosphere || "", r.atmoReason || "", r.wish || "", r.wishOther || "", r.entry || "", r.entryNote || "", r.comment || "",
     r.coupon ? r.coupon.code : "", r.coupon ? (r.coupon.used ? "使用済み" : "未使用") : ""
   ].map(e).join(",")));
@@ -638,7 +638,7 @@ let demoCharge = null;
 
 const SAMPLE_ROWS = [
   { id:"sample1", ts:"2026-10-20T03:00:00.000Z", age:"60代以上", gender:"女性", companion:"1人", source:"通りがかり", sourceNote:"", atmosphere:"とても満足", wish:"その他", wishOther:"手作りのプリンが食べたい", entry:"特になかった", atmoReason:"静かで落ち着くからです", comment:"静かで落ち着きます", coupon:{ code:"KF-D3K8Q2", title:"次回ドリンク 200円引き", expires:"2026/11/19", used:true } },
-  { id:"sample2", ts:"2026-10-21T03:00:00.000Z", age:"40代", gender:"男性", companion:"仕事仲間", source:"紹介", sourceNote:"田中さんの紹介", atmosphere:"やや満足", comment:"Wi-Fiがあると助かります", coupon:{ code:"KF-M7P2X9", title:"次回ドリンク 200円引き", expires:"2026/10/31", used:false } },
+  { id:"sample2", ts:"2026-10-21T03:00:00.000Z", age:"40代", gender:"男性", companion:"その他", companionOther:"近所の方", source:"紹介", sourceNote:"田中さんの紹介", atmosphere:"やや満足", comment:"Wi-Fiがあると助かります", coupon:{ code:"KF-M7P2X9", title:"次回ドリンク 200円引き", expires:"2026/10/31", used:false } },
   { id:"sample3", ts:"2026-10-23T03:00:00.000Z", age:"30代", gender:"女性", companion:"友人", source:"ChatGPT", sourceNote:"", atmosphere:"とても満足", comment:"ChatGPTにおすすめされて来ました", coupon:{ code:"KF-Q4N6B8", title:"次回ドリンク 200円引き", expires:"2026/11/22", used:false } },
   { id:"sample4", ts:"2026-10-24T03:00:00.000Z", age:"20代", gender:"女性", companion:"1人", source:"SNS", sourceNote:"", atmosphere:"とても満足", wish:"甘いもの・ケーキ", entry:"特になかった", comment:"写真で見たケーキが気になって来ました", coupon:{ code:"KF-T9W3E5", title:"次回ドリンク 200円引き", expires:"2026/11/23", used:true } },
   { id:"sample5", ts:"2026-10-25T03:00:00.000Z", age:"50代", gender:"男性", companion:"家族", source:"ホームページ", sourceNote:"", atmosphere:"普通", wish:"お食事メニュー", entry:"お店の場所が分かりにくかった", comment:"駐車場の場所が少し分かりにくかったです", coupon:{ code:"KF-H2J7K4", title:"次回ドリンク 200円引き", expires:"2026/11/24", used:false } },
@@ -913,7 +913,7 @@ function renderCalendar(){
     const source = (r.source || "") + (r.sourceNote ? "（" + r.sourceNote + "）" : "");
     html += '<div class="item"><div class="date">' + fmtDate(r.ts) + '</div><div class="head">' + esc(source || "きっかけ未回答") + '</div><dl>' +
       (who ? '<dt>性別・年齢</dt><dd>' + esc(who) + '</dd>' : '') +
-      (r.companion ? '<dt>誰と一緒に</dt><dd>' + esc(r.companion) + '</dd>' : '') +
+      (r.companion ? '<dt>誰と一緒に</dt><dd>' + esc(r.companion) + (r.companionOther ? '（' + esc(r.companionOther) + '）' : '') + '</dd>' : '') +
       (r.atmosphere ? '<dt>お店の雰囲気</dt><dd>' + esc(r.atmosphere) + '</dd>' : '') +
       (r.atmoReason ? '<dt>雰囲気の理由</dt><dd>' + esc(r.atmoReason) + '</dd>' : '') +
       (r.wish ? '<dt>あったら嬉しいもの</dt><dd>' + esc(r.wish) + '</dd>' : '') +
@@ -979,7 +979,7 @@ function buildPrint(){
   const listRows = rows.map(r => {
     const who = [r.age, r.gender].filter(Boolean).join("・");
     const source = (r.source || "") + (r.sourceNote ? "（" + r.sourceNote + "）" : "");
-    return '<tr><td>' + fmtDate(r.ts) + '</td><td>' + esc(who) + '</td><td>' + esc(r.companion || "") +
+    return '<tr><td>' + fmtDate(r.ts) + '</td><td>' + esc(who) + '</td><td>' + esc(r.companion || "") + (r.companionOther ? '（' + esc(r.companionOther) + '）' : '') +
       '</td><td>' + esc(source) + '</td><td>' + esc(r.atmosphere || "") + '</td><td>' + esc(r.atmoReason || "") + '</td><td>' + esc(r.wish || "") + (r.wishOther ? '（その他：' + esc(r.wishOther) + '）' : '') + '</td><td>' + esc(r.entry || "") + '</td><td>' + esc(r.entryNote || "") + '</td><td>' + esc(r.comment || "") +
       '</td><td>' + (r.coupon ? esc(r.coupon.code) + "<br>" + (r.coupon.used ? "使用済み" : "未使用") : "") + '</td></tr>';
   }).join("");
