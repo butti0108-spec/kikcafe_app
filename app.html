@@ -85,6 +85,7 @@
   html[data-mode="dark"] .tabbar button.special{ background:#2e2a18; color:#e9cf7a; border-color:#8a7422; }
   html[data-mode="dark"] .tabbar button.special.on{ background:#e9b949; color:#3d2f05; }
   #page-credit .item{ border:2px solid #e3c565; }
+  .chead{ font-weight:bold; margin:8px 0 2px; padding:6px 10px; border-radius:6px; background:var(--statusBg); }
   .tabpage{ display:none; }
   .tabpage.on{ display:block; }
   .lead{ font-weight:600; margin:10px 0; }
@@ -124,6 +125,7 @@ try {
   <div class="tabpage on" id="page-answers">
   <input id="listSearch" type="search" placeholder="言葉で探す（例：紹介、ChatGPT、占い）" aria-label="回答を言葉で探す" style="width:100%;padding:12px;font-size:1rem;border:1px solid #c9c2b8;border-radius:8px;margin-bottom:6px;">
   <p class="note" id="listFilterNote" style="margin:2px 0 8px;"></p>
+  <p class="note">この画面を開いたときと、「更新」を押したときに、シートと連動します。シートで消した・直した内容は、そのまま反映されます。</p>
   <div class="summary">
     <div class="sum"><div class="num" id="totalCount">0</div><div class="lbl">回答の総数</div></div>
     <div class="sum"><div class="num" id="avgAtmo">―</div><div class="lbl">雰囲気の平均（5点満点）</div></div>
@@ -135,7 +137,6 @@ try {
   </div>
   <h2>回答の一覧</h2>
   <div id="list"></div>
-  <p class="note">この画面を開いたときと、「更新」を押したときに、シートと連動します。シートで消した・直した内容は、そのまま反映されます。</p>
   <div class="bar" style="margin-top:14px;">
     <button id="resetStoreBtn" type="button" style="padding:10px 16px;font-size:1rem;background:#fff;border:1px solid #b3261e;color:#b3261e;border-radius:8px;cursor:pointer;">取り込み済みを初期化する</button>
   </div>
@@ -157,6 +158,7 @@ try {
 
   <div class="tabpage" id="page-cal">
   <h2>日付から見る</h2>
+  <p class="note">日付を押すと、その日の回答とチャージの記録が見られます。マスの中の数字は、その日の回答の件数です。</p>
   <div class="item">
     <div class="bar" style="justify-content:space-between;">
       <button id="calPrev" type="button" style="padding:10px 16px;font-size:1rem;background:#fff;border:1px solid var(--accent);color:var(--accent);border-radius:8px;cursor:pointer;">← 前の月</button>
@@ -165,13 +167,13 @@ try {
     </div>
     <div id="calGrid"></div>
     <div id="calDetail" style="margin-top:10px;"></div>
-    <p class="note">日付を押すと、その日の回答とチャージの記録が見られます。マスの中の数字は、その日の回答の件数です。</p>
   </div>
 
   </div>
 
   <div class="tabpage" id="page-coupon">
   <h2>クーポンの設定</h2>
+  <p class="note">期間限定のプレゼントなど、クーポンの内容と期限はここで変えられます。変えた内容は、次に発行されるクーポンから使われます。すでに発行済みのクーポンは、そのままの内容・期限で使えます。</p>
   <div class="item">
     <div class="bar">
       <input type="text" id="couponTitleInput" placeholder="クーポンの内容（例：次回ドリンク 200円引き）" style="flex:1;min-width:12em;font-size:1rem;padding:10px;border:1px solid var(--line);border-radius:8px;">
@@ -182,7 +184,6 @@ try {
       <span>日</span>
       <button id="couponConfigBtn" type="button" style="padding:10px 16px;font-size:1rem;background:#fff;border:1px solid var(--accent);color:var(--accent);border-radius:8px;cursor:pointer;">クーポンの設定を保存する</button>
     </div>
-    <p class="note">期間限定のプレゼントなど、クーポンの内容と期限はここで変えられます。変えた内容は、次に発行されるクーポンから使われます。すでに発行済みのクーポンは、そのままの内容・期限で使えます。</p>
   </div>
 
   <h2>クーポン管理</h2>
@@ -192,7 +193,7 @@ try {
   </div>
 
   <div class="tabpage" id="page-charge">
-  <p class="lead">お客様のお金です。お客様から預かった分（入金）と、お会計で残高から払った分（利用）を記録します。</p>
+  <p class="lead">お客様のお金です。お客様から預かった分（入金）と、お会計で残高から払った分（利用）を記録します。残高と履歴は、その場でお客様にお見せできます。</p>
   <h2>チャージ（お預かり残高）</h2>
   <div class="item">
     <div id="chargeAccounts"></div>
@@ -201,7 +202,6 @@ try {
       <button id="chargeNewBtn" type="button" style="padding:10px 16px;font-size:1rem;background:#fff;border:1px solid var(--accent);color:var(--accent);border-radius:8px;cursor:pointer;">新しいお客様を登録</button>
     </div>
     <div id="chargeHistory" style="margin-top:10px;"></div>
-    <p class="note">お客様から預かったお金（入金）と、お会計で残高から払った分（利用）を記録します。残高と履歴は、その場でお客様にお見せできます。</p>
   </div>
 
   </div>
@@ -225,7 +225,6 @@ try {
       <input type="number" id="creditTotalInput" min="0" step="100" style="width:11em;font-size:1rem;padding:10px;border:1px solid var(--line);border-radius:8px;">
       <button id="creditTotalBtn" type="button" style="padding:10px 16px;font-size:1rem;background:#fff;border:1px solid var(--accent);color:var(--accent);border-radius:8px;cursor:pointer;">総額を設定する</button>
     </div>
-    <p class="note">モニター料金の代わりに受けた、飲食で使える現物払い分の残高です。使ったときに、その場で引いて記録します。</p>
   </div>
 
   </div>
@@ -667,14 +666,21 @@ function renderCharge(){
   wrap.innerHTML = accounts.length ? accounts.map(a =>
     '<div class="coupon"><div><div class="code">' + esc(a.name) + '</div>' +
     '<div class="meta">残高 ' + yen(a.balance) + '</div></div></div>' +
-    '<div class="bar" style="margin:4px 0 14px;">' +
+    '<div class="bar" style="margin:4px 0 6px;">' +
+    '<button type="button" data-mode="in" data-acc="' + a.id + '" ' + btnIn + '>入金する</button>' +
+    '<button type="button" data-mode="out" data-acc="' + a.id + '" ' + btnOut + '>利用する（お会計）</button></div>' +
+    '<div id="cbox-' + a.id + '" style="display:none;margin:0 0 14px;">' +
+    '<div class="chead" id="chead-' + a.id + '"></div>' +
+    '<div class="bar" style="margin:4px 0;">' +
     '<input type="number" min="1" step="1" placeholder="金額（円）" id="amt-' + a.id + '" ' + inp + ' style="width:9em;">' +
     '<input type="text" placeholder="メモ（任意）" id="memo-' + a.id + '" ' + inp + ' style="flex:1;min-width:8em;">' +
-    '<button type="button" data-act="in" data-acc="' + a.id + '" ' + btnIn + '>入金</button>' +
-    '<button type="button" data-act="out" data-acc="' + a.id + '" ' + btnOut + '>利用（お会計）</button></div>'
+    '<button type="button" data-go="1" data-acc="' + a.id + '" ' + btnIn + ' id="cgo-' + a.id + '">記録する</button></div></div>'
   ).join("") : '<p class="empty">まだ登録がありません。下の欄から、お客様を登録してください</p>';
-  wrap.querySelectorAll("button[data-act]").forEach(btn => {
-    btn.addEventListener("click", () => chargeMove(btn.getAttribute("data-act"), btn.getAttribute("data-acc")));
+  wrap.querySelectorAll("button[data-mode]").forEach(btn => {
+    btn.addEventListener("click", () => chargeToggle(btn.getAttribute("data-mode"), btn.getAttribute("data-acc")));
+  });
+  wrap.querySelectorAll("button[data-go]").forEach(btn => {
+    btn.addEventListener("click", () => chargeMove(chargeMode[btn.getAttribute("data-acc")] || "in", btn.getAttribute("data-acc")));
   });
   const hist = document.getElementById("chargeHistory");
   const entries = chargeData().entries;
@@ -707,6 +713,28 @@ async function chargeApply(rec){
     const c = loadChargeLocal();
     c.entries.push(rec);
     saveChargeLocal(c);
+  }
+}
+
+const chargeMode = {};
+function chargeToggle(mode, accountId){
+  const box = document.getElementById("cbox-" + accountId);
+  const head = document.getElementById("chead-" + accountId);
+  const go = document.getElementById("cgo-" + accountId);
+  const memo = document.getElementById("memo-" + accountId);
+  if (!box) return;
+  const opening = box.style.display === "none" || chargeMode[accountId] !== mode;
+  chargeMode[accountId] = mode;
+  box.style.display = opening ? "block" : "none";
+  if (!opening) return;
+  if (mode === "in"){
+    head.textContent = "入金（お預かり）の記録";
+    go.textContent = "入金を記録する";
+    memo.placeholder = "メモ（例：現金でお預かり）";
+  } else {
+    head.textContent = "利用（お会計）の記録";
+    go.textContent = "利用を記録する";
+    memo.placeholder = "メモ（例：ランチとコーヒー）";
   }
 }
 
