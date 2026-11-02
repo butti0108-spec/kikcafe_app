@@ -81,6 +81,20 @@
   <h2>集計：年代</h2>
   <div class="agg" id="aggAge"><p class="empty">まだ回答はありません</p></div>
 
+  <h2>クーポンの設定</h2>
+  <div class="item">
+    <div class="bar">
+      <input type="text" id="couponTitleInput" placeholder="クーポンの内容（例：次回ドリンク 200円引き）" style="flex:1;min-width:12em;font-size:1rem;padding:10px;border:1px solid var(--line);border-radius:8px;">
+    </div>
+    <div class="bar">
+      <span>有効期限：発行から</span>
+      <input type="number" id="couponDaysInput" min="1" max="730" step="1" style="width:7em;font-size:1rem;padding:10px;border:1px solid var(--line);border-radius:8px;">
+      <span>日</span>
+      <button id="couponConfigBtn" type="button" style="padding:10px 16px;font-size:1rem;background:#fff;border:1px solid var(--accent);color:var(--accent);border-radius:8px;cursor:pointer;">クーポンの設定を保存する</button>
+    </div>
+    <p class="note">期間限定のプレゼントなど、クーポンの内容と期限はここで変えられます。変えた内容は、次に発行されるクーポンから使われます。すでに発行済みのクーポンは、そのままの内容・期限で使えます。</p>
+  </div>
+
   <h2>クーポン管理</h2>
   <input class="search" id="couponSearch" type="text" placeholder="クーポン番号で検索（例：KF-）">
   <div id="coupons"></div>
@@ -134,18 +148,36 @@ function fmtDate(iso){
 }
 
 let serverCredit = null; /* 本番（GAS）時はシート側の残高状態を持つ */
+let serverConfig = null; /* 本番（GAS）時はシート側のクーポン設定を持つ */
+
+/* ===== クーポンの設定（内容・有効期限） ===== */
+const CONFIG_KEY = "survey_proto_config_v1";
+const CONFIG_DEFAULTS = { couponTitle: "次回ドリンク 200円引き", couponDays: 30 };
+function loadConfig(){
+  try { return Object.assign({}, CONFIG_DEFAULTS, JSON.parse(localStorage.getItem(CONFIG_KEY) || "{}")); }
+  catch(e){ return Object.assign({}, CONFIG_DEFAULTS); }
+}
+function currentConfig(){ return (GAS_URL && serverConfig) ? serverConfig : loadConfig(); }
+function renderConfig(){
+  const cfg = currentConfig();
+  const t = document.getElementById("couponTitleInput");
+  const d = document.getElementById("couponDaysInput");
+  if (document.activeElement !== t) t.value = cfg.couponTitle || "";
+  if (document.activeElement !== d) d.value = cfg.couponDays || 30;
+}
 
 async function fetchAll(){
   if (GAS_URL) {
     const res = await fetch(GAS_URL, { method: "GET" });
     const data = await res.json();
     return { responses: Array.isArray(data) ? data : (data.responses || []),
-             credit: Array.isArray(data) ? null : (data.credit || null) };
+             credit: Array.isArray(data) ? null : (data.credit || null),
+             config: Array.isArray(data) ? null : (data.config || null) };
   }
   await new Promise(r => setTimeout(r, 400));
   let inbox = [];
   try { inbox = JSON.parse(localStorage.getItem(INBOX_KEY) || "[]"); } catch(e) {}
-  return { responses: inbox, credit: null };
+  return { responses: inbox, credit: null, config: null };
 }
 
 async function postAction(obj){
@@ -240,6 +272,8 @@ async function refresh(){
     const all = await fetchAll();
     const inbox = all.responses;
     if (GAS_URL && all.credit) { serverCredit = all.credit; renderCredit(); }
+    if (GAS_URL && all.config) { serverConfig = all.config; }
+    renderConfig();
     const store = loadStore();
     const byId = new Map(store.map(r => [r.id, r]));
     let freshCount = 0;
@@ -362,6 +396,20 @@ document.getElementById("creditTotalBtn").addEventListener("click", async () => 
   }
   statusEl.textContent = "総額を " + yen(v) + " に設定しました";
   renderCredit();
+});
+document.getElementById("couponConfigBtn").addEventListener("click", async () => {
+  const title = document.getElementById("couponTitleInput").value.trim();
+  const days = Math.round(Number(document.getElementById("couponDaysInput").value));
+  if (!title){ statusEl.textContent = "クーポンの内容を入力してください"; return; }
+  if (!(days >= 1 && days <= 730)){ statusEl.textContent = "有効期限は1日から730日の間で設定してください"; return; }
+  if (GAS_URL) {
+    const json = await postAction({ action: "configCoupon", title: title, days: days });
+    if (json && json.config) serverConfig = json.config;
+  } else {
+    localStorage.setItem(CONFIG_KEY, JSON.stringify({ couponTitle: title, couponDays: days }));
+  }
+  statusEl.textContent = "クーポンの設定を保存しました（内容：" + title + "／期限：発行から" + days + "日）。次に発行されるクーポンから使われます";
+  renderConfig();
 });
 
 /* ===== 印刷（集計レポート） ===== */

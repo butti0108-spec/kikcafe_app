@@ -32,6 +32,39 @@ function jsonOut_(obj) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+const CONFIG_SHEET = 'config';
+const CONFIG_DEFAULTS = { couponTitle: '次回ドリンク 200円引き', couponDays: 30 };
+
+function getConfigSheet_() {
+  const ss = book_();
+  let sh = ss.getSheetByName(CONFIG_SHEET);
+  if (!sh) {
+    sh = ss.insertSheet(CONFIG_SHEET);
+    sh.appendRow(['key', 'value']);
+  }
+  return sh;
+}
+
+function readConfig_() {
+  const sh = getConfigSheet_();
+  const values = sh.getDataRange().getValues();
+  const cfg = { couponTitle: CONFIG_DEFAULTS.couponTitle, couponDays: CONFIG_DEFAULTS.couponDays };
+  for (let i = 1; i < values.length; i++) {
+    if (values[i][0] === 'couponTitle' && values[i][1]) cfg.couponTitle = String(values[i][1]);
+    else if (values[i][0] === 'couponDays' && Number(values[i][1])) cfg.couponDays = Number(values[i][1]);
+  }
+  return cfg;
+}
+
+function setConfig_(key, value) {
+  const sh = getConfigSheet_();
+  const values = sh.getDataRange().getValues();
+  for (let i = 1; i < values.length; i++) {
+    if (values[i][0] === key) { sh.getRange(i + 1, 2).setValue(value); return; }
+  }
+  sh.appendRow([key, value]);
+}
+
 const CREDIT_SHEET = 'credit';
 const CREDIT_DEFAULT_TOTAL = 15000;
 
@@ -94,6 +127,14 @@ function doPost(e) {
     return jsonOut_({ ok: true, credit: readCredit_() });
   }
 
+  if (data.action === 'configCoupon') {
+    const title = String(data.title || '').slice(0, 60);
+    if (title) setConfig_('couponTitle', title);
+    const days = Math.round(Number(data.days) || 0);
+    if (days >= 1 && days <= 730) setConfig_('couponDays', days);
+    return jsonOut_({ ok: true, config: readConfig_() });
+  }
+
   if (data.action === 'useCoupon') {
     const values = sh.getDataRange().getValues();
     for (let i = 1; i < values.length; i++) {
@@ -137,7 +178,11 @@ function makeCode_() {
   return 'KF-' + s;
 }
 
-function doGet() {
+function doGet(e) {
+  /* フォーム用：設定だけを返す（回答データは渡さない） */
+  if (e && e.parameter && e.parameter.mode === 'config') {
+    return jsonOut_({ config: readConfig_() });
+  }
   const sh = getSheet_();
   const values = sh.getDataRange().getValues();
   values.shift(); // 見出し行を除く
@@ -158,5 +203,5 @@ function doGet() {
       used: String(r[12]) === 'used'
     } : null
   }));
-  return jsonOut_({ responses: list, credit: readCredit_() });
+  return jsonOut_({ responses: list, credit: readCredit_(), config: readConfig_() });
 }

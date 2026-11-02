@@ -34,6 +34,8 @@
 - 受け口URL（GAS_URL、form.html / app.html の両方に設定済み）: https://script.google.com/macros/s/AKfycbzx28cBPtdGpbPS9Lc9Aq26qsVDD1IptbI01nLfdY5iJFKmXpNHkgKOHMY00xYQQNE/exec
 - 回答の保存先シート「KIKCAFE アンケート回答」: https://docs.google.com/spreadsheets/d/1JoyZ9kDN8inpkLcuZ_d_2gcJwJA6QjYAsoGaDTUR6YM/edit
 - 通し確認済み（2026-11-02）: 回答の送信→シート登録→読み出し／残高の利用記録（800円）→取消。テストデータは削除済みで、シートは空の状態
+- クーポンの設定（2026-11-02追加）: 内容（例「次回ドリンク 200円引き」）と有効期限（発行からの日数、初期値30日）は、管理画面の「クーポンの設定」から変更でき、シートの config シートに保存されます。変更は次に発行されるクーポンから反映され、発行済みのクーポンは元の内容・期限のままです。フォームは開かれたときに設定だけを読みに行きます（?mode=config、回答データは渡しません）
+- クーポンのスクショ登録（2026-11-02追加）: 送信完了画面のボタンで、クーポンを画像として保存できます（共有シート対応端末では共有から、他はダウンロード＋長押し保存用に画像を表示）
 - 公開済み（GitHub Pages、2026-11-02）: フォーム https://butti0108-spec.github.io/kikcafe_app/form.html ／ 管理画面 https://butti0108-spec.github.io/kikcafe_app/app.html（どちらも公開ページに本番の受け口URLが入っていることを確認済み）
 - QRコード（フォームURL、読み取り確認済み）: qr_form.png
 

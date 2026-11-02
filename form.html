@@ -30,6 +30,10 @@
   .coupon .c-title{ font-weight:bold; font-size:1.25rem; margin-bottom:4px; }
   .coupon .c-code{ font-size:1.75rem; font-weight:bold; letter-spacing:2px; margin:10px 0; }
   .coupon .c-exp{ font-size:0.875rem; color:#5a6a76; }
+  .save-btn{ display:block; width:100%; padding:16px; margin-top:16px; font-size:1.125rem; font-weight:bold; color:#fff; background:var(--accent); border:none; border-radius:10px; cursor:pointer; }
+  .show-note{ text-align:center; margin-top:14px; }
+  .save-msg{ text-align:center; margin-top:10px; color:#2e7d32; font-weight:bold; }
+  #couponImg{ display:none; width:100%; margin-top:14px; border-radius:12px; }
   #err{ display:none; color:#b3261e; margin-top:10px; }
 </style>
 </head>
@@ -92,14 +96,17 @@
   </div>
   <div id="done">
     <p class="big">ご回答ありがとうございました</p>
-    <p class="thanks">クーポンを発行しました。次回のご来店時に、この画面をお見せください。</p>
+    <p class="thanks">クーポンを発行しました。こちらを押してスクショ登録してください。</p>
     <div class="coupon">
-      <div class="c-title">次回ドリンク 200円引きクーポン</div>
+      <div class="c-title" id="couponTitleText">次回ドリンク 200円引きクーポン</div>
       <div>クーポン番号</div>
       <div class="c-code" id="couponCode">――――</div>
       <div class="c-exp">有効期限：<span id="couponExp"></span></div>
-      <div class="c-exp">この画面のスクリーンショットを保存しておくと安心です</div>
     </div>
+    <button type="button" class="save-btn" id="saveCouponBtn">クーポンをスクショ登録する</button>
+    <p class="save-msg" id="saveMsg"></p>
+    <img id="couponImg" alt="クーポンの画像">
+    <p class="show-note">次回ご来店の際、期限内に、このクーポンをお見せください。</p>
   </div>
 </div>
 <script>
@@ -109,8 +116,24 @@
    本番では、Apps Script（Code.gs）を公開したURLをここに入れます。 */
 const GAS_URL = "https://script.google.com/macros/s/AKfycbzx28cBPtdGpbPS9Lc9Aq26qsVDD1IptbI01nLfdY5iJFKmXpNHkgKOHMY00xYQQNE/exec";
 const INBOX_KEY = "survey_proto_inbox_v3";
-const COUPON_TITLE = "次回ドリンク 200円引き";
-const COUPON_DAYS = 30; /* 有効期限：発行から30日 */
+/* クーポンの内容と有効期限：初期値は下記の通り。本番はシート側の設定（管理画面で変更可）を読み、
+   デモ動作では同じ端末内の設定を読む。読めなければ初期値のまま */
+let couponTitle = "次回ドリンク 200円引き";
+let couponDays = 30;
+const CONFIG_KEY = "survey_proto_config_v1";
+function applyConfig(cfg){
+  if (!cfg) return;
+  if (cfg.couponTitle) couponTitle = String(cfg.couponTitle);
+  if (Number(cfg.couponDays)) couponDays = Number(cfg.couponDays);
+  document.getElementById("couponTitleText").textContent = couponTitle + "クーポン";
+}
+if (GAS_URL) {
+  fetch(GAS_URL + "?mode=config").then(r => r.json()).then(j => {
+    if (j && j.config) applyConfig(j.config);
+  }).catch(() => {});
+} else {
+  try { applyConfig(JSON.parse(localStorage.getItem(CONFIG_KEY) || "{}")); } catch (e) {}
+}
 
 function makeCode(){
   const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
@@ -130,7 +153,7 @@ document.getElementById("survey").addEventListener("submit", async (ev) => {
   btn.disabled = true; err.style.display = "none";
   const fd = new FormData(ev.target);
   const now = new Date();
-  const exp = new Date(now.getTime() + COUPON_DAYS * 24 * 60 * 60 * 1000);
+  const exp = new Date(now.getTime() + couponDays * 24 * 60 * 60 * 1000);
   let code = makeCode();
   if (!GAS_URL) {
     /* デモ動作：発行済みの番号と照合し、かぶったら振り直す（前に出た番号は出さない） */
@@ -150,7 +173,7 @@ document.getElementById("survey").addEventListener("submit", async (ev) => {
     sourceNote: (fd.get("sourceNote") || "").trim(),
     atmosphere: fd.get("atmosphere") || "",
     comment: (fd.get("comment") || "").trim(),
-    coupon: { code: code, title: COUPON_TITLE, expires: fmtDate(exp), used: false }
+    coupon: { code: code, title: couponTitle, expires: fmtDate(exp), used: false }
   };
   try {
     if (GAS_URL) {
@@ -174,6 +197,54 @@ document.getElementById("survey").addEventListener("submit", async (ev) => {
   } catch (e) {
     err.style.display = "block";
     btn.disabled = false;
+  }
+});
+
+/* ===== クーポンのスクショ登録（画像として保存） ===== */
+document.getElementById("saveCouponBtn").addEventListener("click", async () => {
+  const code = document.getElementById("couponCode").textContent;
+  const exp = document.getElementById("couponExp").textContent;
+  const msg = document.getElementById("saveMsg");
+  const cv = document.createElement("canvas");
+  cv.width = 1080; cv.height = 560;
+  const ctx = cv.getContext("2d");
+  ctx.fillStyle = "#fff8e6"; ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.strokeStyle = "#c9a227"; ctx.lineWidth = 6; ctx.setLineDash([18, 12]);
+  ctx.strokeRect(24, 24, cv.width - 48, cv.height - 48);
+  ctx.setLineDash([]);
+  ctx.fillStyle = "#26343e"; ctx.textAlign = "center";
+  ctx.font = "bold 44px sans-serif";
+  ctx.fillText("KIKCAFE", cv.width / 2, 110);
+  const titleText = couponTitle + "クーポン";
+  let tSize = 62;
+  ctx.font = "bold " + tSize + "px sans-serif";
+  while (ctx.measureText(titleText).width > cv.width - 140 && tSize > 30) {
+    tSize -= 4; ctx.font = "bold " + tSize + "px sans-serif";
+  }
+  ctx.fillText(titleText, cv.width / 2, 210);
+  ctx.font = "36px sans-serif"; ctx.fillStyle = "#5a6a76";
+  ctx.fillText("クーポン番号", cv.width / 2, 300);
+  ctx.font = "bold 96px monospace"; ctx.fillStyle = "#26343e";
+  ctx.fillText(code, cv.width / 2, 410);
+  ctx.font = "38px sans-serif"; ctx.fillStyle = "#5a6a76";
+  ctx.fillText("有効期限：" + exp, cv.width / 2, 495);
+  const url = cv.toDataURL("image/png");
+  const img = document.getElementById("couponImg");
+  img.src = url; img.style.display = "block";
+  try {
+    const blob = await new Promise(r => cv.toBlob(r, "image/png"));
+    const file = new File([blob], "kikcafe_coupon.png", { type: "image/png" });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file] });
+      msg.textContent = "保存できました";
+      return;
+    }
+    const a = document.createElement("a");
+    a.href = url; a.download = "kikcafe_coupon.png";
+    document.body.appendChild(a); a.click(); a.remove();
+    msg.textContent = "保存できました";
+  } catch (e) {
+    msg.textContent = "下の画像を長押ししても保存できます";
   }
 });
 </script>
