@@ -85,6 +85,10 @@
   html[data-mode="dark"] .tabbar button.special{ background:#2e2a18; color:#e9cf7a; border-color:#8a7422; }
   html[data-mode="dark"] .tabbar button.special.on{ background:#e9b949; color:#3d2f05; }
   #page-credit .item{ border:2px solid #e3c565; }
+  .modebtn{ padding:10px 16px; font-size:1rem; background:#fff; border:1px solid var(--accent); color:var(--accent); border-radius:8px; cursor:pointer; }
+  .modebtn.on{ background:var(--accent); color:#fff; font-weight:bold; }
+  html[data-mode="dark"] .modebtn{ background:#262d3d; color:#e8ecf2; border-color:#3a4152; }
+  html[data-mode="dark"] .modebtn.on{ background:var(--accent); color:#fff; }
   .chead{ font-weight:bold; margin:8px 0 2px; padding:6px 10px; border-radius:6px; background:var(--statusBg); }
   .tabpage{ display:none; }
   .tabpage.on{ display:block; }
@@ -667,8 +671,8 @@ function renderCharge(){
     '<div class="coupon"><div><div class="code">' + esc(a.name) + '</div>' +
     '<div class="meta">残高 ' + yen(a.balance) + '</div></div></div>' +
     '<div class="bar" style="margin:4px 0 6px;">' +
-    '<button type="button" data-mode="in" data-acc="' + a.id + '" ' + btnIn + '>入金する</button>' +
-    '<button type="button" data-mode="out" data-acc="' + a.id + '" ' + btnOut + '>利用する（お会計）</button></div>' +
+    '<button type="button" class="modebtn" data-mode="in" data-acc="' + a.id + '">入金する</button>' +
+    '<button type="button" class="modebtn" data-mode="out" data-acc="' + a.id + '">利用する（お会計）</button></div>' +
     '<div id="cbox-' + a.id + '" style="display:none;margin:0 0 14px;">' +
     '<div class="chead" id="chead-' + a.id + '"></div>' +
     '<div class="bar" style="margin:4px 0;">' +
@@ -724,6 +728,9 @@ function chargeToggle(mode, accountId){
   const memo = document.getElementById("memo-" + accountId);
   if (!box) return;
   const opening = box.style.display === "none" || chargeMode[accountId] !== mode;
+  document.querySelectorAll('button.modebtn[data-acc="' + accountId + '"]').forEach(function(b){
+    b.classList.toggle("on", opening && b.getAttribute("data-mode") === mode);
+  });
   chargeMode[accountId] = mode;
   box.style.display = opening ? "block" : "none";
   if (!opening) return;
