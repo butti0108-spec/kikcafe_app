@@ -85,7 +85,7 @@
   html[data-mode="dark"] .tabbar button.special{ background:#2e2a18; color:#e9cf7a; border-color:#8a7422; }
   html[data-mode="dark"] .tabbar button.special.on{ background:#e9b949; color:#3d2f05; }
   #page-credit .item{ border:2px solid #e3c565; }
-  .modebtn{ padding:10px 16px; font-size:1rem; background:#fff; border:1px solid var(--accent); color:var(--accent); border-radius:8px; cursor:pointer; }
+  .modebtn{ padding:12px 16px; font-size:1rem; background:#fff; border:1px solid var(--accent); color:var(--accent); border-radius:8px; cursor:pointer; }
   .modebtn.on{ background:var(--accent); color:#fff; font-weight:bold; }
   html[data-mode="dark"] .modebtn{ background:#262d3d; color:#e8ecf2; border-color:#3a4152; }
   html[data-mode="dark"] .modebtn.on{ background:var(--accent); color:#fff; }
@@ -219,10 +219,10 @@ try {
       <div class="sum"><div class="num" id="creditTotal">―</div><div class="lbl">総額</div></div>
       <div class="sum"><div class="num" id="creditUsed">―</div><div class="lbl">使った合計</div></div>
     </div>
-    <div class="bar">
-      <input type="number" id="useAmount" min="1" step="1" placeholder="使った金額（円）" style="width:11em;font-size:1rem;padding:10px;border:1px solid var(--line);border-radius:8px;">
-      <input type="text" id="useMemo" placeholder="メモ（例：コーヒーとケーキ）" style="flex:1;min-width:10em;font-size:1rem;padding:10px;border:1px solid var(--line);border-radius:8px;">
-      <button id="useBtn" type="button" style="padding:12px 20px;font-size:1rem;font-weight:bold;color:#fff;background:var(--accent);border:none;border-radius:8px;cursor:pointer;">使った分を引く</button>
+    <div>
+      <input type="number" id="useAmount" min="1" step="1" placeholder="使った金額（円）" style="width:100%;font-size:1rem;padding:14px;border:1px solid var(--line);border-radius:8px;">
+      <input type="text" id="useMemo" placeholder="メモ（例：コーヒーとケーキ）" style="width:100%;font-size:1rem;padding:14px;margin-top:10px;border:1px solid var(--line);border-radius:8px;">
+      <button id="useBtn" type="button" style="width:100%;padding:16px;margin-top:20px;font-size:1rem;font-weight:bold;color:#fff;background:var(--accent);border:none;border-radius:8px;cursor:pointer;">使った分を引く</button>
     </div>
     <div id="creditHistory"></div>
     <div class="bar" style="margin-top:10px;">
@@ -668,17 +668,15 @@ function renderCharge(){
   const btnOut = 'style="padding:10px 16px;font-size:1rem;background:#fff;border:1px solid var(--accent);color:var(--accent);border-radius:8px;cursor:pointer;"';
   const inp = 'style="font-size:1rem;padding:10px;border:1px solid var(--line);border-radius:8px;"';
   wrap.innerHTML = accounts.length ? accounts.map(a =>
-    '<div class="coupon"><div><div class="code">' + esc(a.name) + '</div>' +
-    '<div class="meta">残高 ' + yen(a.balance) + '</div></div></div>' +
-    '<div class="bar" style="margin:4px 0 6px;">' +
+    '<div class="coupon"><div style="flex:1;min-width:6em;"><div class="code">' + esc(a.name) + '</div>' +
+    '<div class="meta">残高 ' + yen(a.balance) + '</div></div>' +
     '<button type="button" class="modebtn" data-mode="in" data-acc="' + a.id + '">入金する</button>' +
     '<button type="button" class="modebtn" data-mode="out" data-acc="' + a.id + '">利用する（お会計）</button></div>' +
     '<div id="cbox-' + a.id + '" style="display:none;margin:0 0 14px;">' +
     '<div class="chead" id="chead-' + a.id + '"></div>' +
-    '<div class="bar" style="margin:4px 0;">' +
-    '<input type="number" min="1" step="1" placeholder="金額（円）" id="amt-' + a.id + '" ' + inp + ' style="width:9em;">' +
-    '<input type="text" placeholder="メモ（任意）" id="memo-' + a.id + '" ' + inp + ' style="flex:1;min-width:8em;">' +
-    '<button type="button" data-go="1" data-acc="' + a.id + '" ' + btnIn + ' id="cgo-' + a.id + '">記録する</button></div></div>'
+    '<input type="number" min="1" step="1" placeholder="金額（円）" id="amt-' + a.id + '" style="font-size:1rem;padding:14px;border:1px solid var(--line);border-radius:8px;width:100%;margin-top:6px;">' +
+    '<input type="text" placeholder="メモ（任意）" id="memo-' + a.id + '" style="font-size:1rem;padding:14px;border:1px solid var(--line);border-radius:8px;width:100%;margin-top:10px;">' +
+    '<button type="button" data-go="1" data-acc="' + a.id + '" id="cgo-' + a.id + '" style="width:100%;padding:16px;margin-top:20px;font-size:1rem;font-weight:bold;color:#fff;background:var(--accent);border:none;border-radius:8px;cursor:pointer;">記録する</button></div>'
   ).join("") : '<p class="empty">まだ登録がありません。下の欄から、お客様を登録してください</p>';
   wrap.querySelectorAll("button[data-mode]").forEach(btn => {
     btn.addEventListener("click", () => chargeToggle(btn.getAttribute("data-mode"), btn.getAttribute("data-acc")));
